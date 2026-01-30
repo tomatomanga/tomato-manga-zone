@@ -6,7 +6,7 @@
 <title>Tomato Manga Zone</title>
 
 <style>
-/* CSS styles - Original Design Maintained */
+/* CSS styles - မူရင်းဒီဇိုင်းအတိုင်း ထိန်းသိမ်းထားပါသည် */
 *{margin:0;padding:0;box-sizing:border-box}
 :root{ --bg:#000; --text:#fff; --card:#111; --accent:#ff2a2a; }
 body.light{ --bg:#fff; --text:#000; --card:#f2f2f2; --accent:#ff2a2a; }
@@ -150,7 +150,7 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  // IMGBB CONFIGURATION
+  // ၁။ IMGBB CONFIGURATION (ကြားခံ Cloud)
   const IMGBB_API_KEY = "1514f8313ed6947ee69bcdec03b70517";
 
   const firebaseConfig = {
@@ -168,7 +168,7 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
 
   window.mangas = [];
   
-  // Helper: Cloud Upload Function
+  // ၂။ Cloud Upload Function (ImgBB ဆီ ပို့ပြီး Link ပြန်တောင်းသည်)
   async function uploadToCloud(file) {
       let formData = new FormData();
       formData.append("image", file);
@@ -178,7 +178,7 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
       });
       const data = await res.json();
       if(!data.success) throw new Error("Cloud Upload Failed");
-      return data.data.url; // Returns the clean URL string
+      return data.data.url; // ပုံရဲ့ Link (စာသား) ကို ပြန်ပေးသည်
   }
 
   // Intro background logic
@@ -197,6 +197,7 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
     renderPublic(); renderFeatured(); renderShowcase(); renderHistory(); updateMangaSelect();
   });
 
+  // ၃။ Manga အသစ်တင်ခြင်း (Cover ကို Cloud တင်မည်)
   window.uploadManga = async function() {
     const title = document.getElementById('mangaTitle').value;
     const imgInput = document.getElementById('mangaImg');
@@ -214,7 +215,7 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
       await addDoc(collection(db, "mangas"), {
         id: Date.now(),
         name: title,
-        img: imageUrl,
+        img: imageUrl, // Link (စာသား) ကိုပဲ Firebase ထဲ သိမ်းမည်
         chapters: []
       });
       document.getElementById('mangaTitle').value = "";
@@ -226,6 +227,7 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
     btn.disabled = false;
   }
 
+  // ၄။ Chapter တင်ခြင်း (ပုံအားလုံးကို Cloud တင်မည်)
   window.uploadChapter = async function() {
     const selectedFbId = document.getElementById('mangaSelect').value;
     const cTitle = document.getElementById('chapterTitle').value;
@@ -237,12 +239,12 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
     }
 
     btn.disabled = true;
-    showStatus(`Uploading ${files.length} pages... (Please wait)`, "success");
+    showStatus(`Uploading ${files.length} pages to Cloud...`, "success");
 
     try {
       let cloudUrls = [];
       for(let file of files) {
-          const url = await uploadToCloud(file);
+          const url = await uploadToCloud(file); // တစ်ပုံချင်းစီ Cloud တင်
           cloudUrls.push(url);
       }
 

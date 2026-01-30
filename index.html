@@ -183,7 +183,6 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
 }
 #adminBack{position:sticky;bottom:0;padding:10px;background:#1a1a1a;text-align:center;cursor:pointer}
 
-/* အလန်းစား Upload Design */
 .upload-zone {
   border: 2px dashed #444;
   padding: 20px;
@@ -198,7 +197,6 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
 .upload-zone:active { border-color: var(--accent); background: #222; }
 .upload-zone b { color: var(--accent); display: block; margin-bottom: 5px; }
 
-/* Preview Grid */
 #previewGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -274,7 +272,7 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
     <input id="mangaTitle" placeholder="Manga Title">
     <label>Cover Image</label>
     <input type="file" id="mangaImg" accept="image/*">
-    <button onclick="uploadManga()" style="background: #2255ff;">Create Manga</button>
+    <button onclick="uploadManga()" id="createBtn" style="background: #2255ff;">Create Manga</button>
 
     <hr style="margin: 20px 0; border: 0.5px solid #333;">
 
@@ -284,13 +282,13 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
     
     <div class="upload-zone" onclick="document.getElementById('chapterFiles').click()">
       <b>📁 SELECT MULTIPLE IMAGES</b>
-      <span id="fileStatus">Click to open Gallery</span>
+      <span id="fileStatus">Convert Images to Text Storage</span>
     </div>
     <input type="file" id="chapterFiles" accept="image/*" multiple onchange="handleFiles(this.files)" style="display:none">
     
     <div id="previewGrid"></div>
 
-    <button onclick="uploadChapter()" style="background: #ff2a2a;">Upload Chapter</button>
+    <button onclick="uploadChapter()" id="uploadBtn" style="background: #ff2a2a;">Upload Chapter</button>
 
     <h3>Manage</h3>
     <div id="historyList"></div>
@@ -308,157 +306,230 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
 
 <div id="uploadStatus"></div>
 
-<script>
-for(let i=0;i<42;i++){
-  introBg.innerHTML+=`<svg viewBox="0 0 160 220"><rect width="160" height="220" fill="#222"/><rect x="10" y="10" width="140" height="60" fill="#000"/><rect x="10" y="80" width="60" height="50" fill="#000"/><rect x="80" y="80" width="70" height="120" fill="#000"/></svg>`;
-}
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-const ADMIN_PASSWORD="Tomatochitsanmg03";
-let mangas=[];
-let currentFiles = [];
-
-function handleFiles(files) {
-  currentFiles = Array.from(files);
-  const status = document.getElementById('fileStatus');
-  const grid = document.getElementById('previewGrid');
-  
-  status.innerText = currentFiles.length + " images selected";
-  grid.innerHTML = "";
-  
-  // Preview ထည့်လိုက်ခြင်းက ပုံတွေအများကြီး ပါမပါ သိသာစေပါတယ်
-  currentFiles.slice(0, 8).forEach(file => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      grid.innerHTML += `<img src="${e.target.result}" class="pre-img">`;
-    };
-    reader.readAsDataURL(file);
-  });
-  if(currentFiles.length > 8) grid.innerHTML += `<div style="display:grid; place-items:center; background:#222; border-radius:4px; font-size:10px;">+${currentFiles.length - 8}</div>`;
-}
-
-function enterSite(){
-  intro.classList.add("fade-out");
-  setTimeout(()=>{ intro.style.display="none"; mainHeader.style.display="block"; },600);
-}
-
-themeBtn.onclick=()=>{
-  document.body.classList.toggle("light");
-  themeBtn.innerText=document.body.classList.contains("light")?"🌞":"🌙";
-}
-
-function toggleAdmin(){adminSidebar.classList.toggle("show")}
-
-function checkPass(){
-  if(adminPass.value===ADMIN_PASSWORD){
-    loginBox.style.display="none"; adminForm.style.display="block";
-    showStatus("Login Successful","success");
-  }else showStatus("Wrong Password","fail");
-}
-
-function showStatus(t,type){
-  uploadStatus.innerText=t; uploadStatus.className=type+" show";
-  setTimeout(()=>uploadStatus.className="",2000);
-}
-
-function uploadManga(){
-  if(!mangaTitle.value || !mangaImg.files[0]){
-    showStatus("Title & Cover required","fail"); return;
-  }
-  const newManga = {
-    id: Date.now(),
-    name: mangaTitle.value,
-    img: URL.createObjectURL(mangaImg.files[0]),
-    chapters: []
+  const firebaseConfig = {
+    apiKey: "AIzaSyBBr71Dk5p8Uk1nn5D0oBYeQWPvFcKX4",
+    authDomain: "tomato-manga-zone.firebaseapp.com",
+    projectId: "tomato-manga-zone",
+    storageBucket: "tomato-manga-zone.firebasestorage.app",
+    messagingSenderId: "28164821885",
+    appId: "1:28164821885:web:d23cc3faa8d8dbae22f214",
+    measurementId: "G-BNR7BQP2VC"
   };
-  mangas.push(newManga);
-  updateMangaSelect(); renderPublic(); renderFeatured(); renderShowcase(); renderHistory();
-  mangaTitle.value = ""; mangaImg.value = "";
-  showStatus("Manga Created!","success");
-}
 
-function uploadChapter(){
-  const selectedId = document.getElementById('mangaSelect').value;
-  const cTitle = document.getElementById('chapterTitle').value;
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-  if(!selectedId || !cTitle || currentFiles.length === 0){
-    showStatus("Required fields missing","fail"); return;
+  window.mangas = [];
+  let currentTextPages = [];
+
+  // Intro BG Animation Loop
+  const introBg = document.getElementById('introBg');
+  for(let i=0;i<42;i++){
+    introBg.innerHTML+=`<svg viewBox="0 0 160 220"><rect width="160" height="220" fill="#222"/><rect x="10" y="10" width="140" height="60" fill="#000"/><rect x="10" y="80" width="60" height="50" fill="#000"/><rect x="80" y="80" width="70" height="120" fill="#000"/></svg>`;
   }
 
-  const targetManga = mangas.find(m => m.id == selectedId);
-  const pagesArray = currentFiles.map(file => URL.createObjectURL(file));
+  const convertToText = (file) => new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => res(reader.result);
+      reader.onerror = e => rej(e);
+  });
 
-  targetManga.chapters.push({ title: cTitle, pages: pagesArray });
-  showStatus("Chapter Uploaded!","success");
-  
-  // Reset
-  document.getElementById('chapterTitle').value = "";
-  document.getElementById('chapterFiles').value = "";
-  document.getElementById('previewGrid').innerHTML = "";
-  document.getElementById('fileStatus').innerText = "Click to open Gallery";
-  currentFiles = [];
-  renderHistory();
-}
-
-function updateMangaSelect(){
-  document.getElementById('mangaSelect').innerHTML = mangas.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
-}
-
-function renderPublic(){
-  mangaList.innerHTML = mangas.map(m => `
-    <div class="manga" onclick="openManga(${m.id})">
-      <img src="${m.img}">
-      <p>${m.name}</p>
-    </div>`).join('');
-}
-
-function renderFeatured(){
-  if(mangas.length > 0) { featuredBar.style.display="block"; popularTitleBar.style.display="flex"; }
-  featuredTrack.innerHTML = mangas.map(m => `<div class="featuredItem" onclick="openManga(${m.id})"><img src="${m.img}"></div>`).join('');
-}
-
-function renderShowcase(){
-  if(mangas.length > 0) showcase.style.display="block";
-  showcaseTrack.innerHTML = mangas.map(m => `<div class="showcaseItem"><img src="${m.img}"></div>`).join('');
-}
-
-function renderHistory(){
-  historyList.innerHTML = mangas.map(m => `
-    <div class="historyItem">
-      <img src="${m.img}">
-      <div class="historyInfo"><b>${m.name}</b><br>${m.chapters.length} Chapters</div>
-      <div style="color:red; cursor:pointer;" onclick="deleteManga(${m.id})">🗑️</div>
-    </div>`).join('');
-}
-
-function deleteManga(id){
-  mangas = mangas.filter(m => m.id !== id);
-  renderPublic(); renderFeatured(); renderShowcase(); renderHistory(); updateMangaSelect();
-}
-
-function openManga(id){
-  const m = mangas.find(x => x.id === id);
-  mangaList.style.display = "none"; showcase.style.display = "none"; featuredBar.style.display = "none";
-  popularTitleBar.style.display = "none";
-  detailPage.style.display = "block";
-  detailName.innerText = m.name;
-  
-  let html = "";
-  if(m.chapters.length === 0) html = "<p style='text-align:center; opacity:0.5;'>No chapters yet.</p>";
-  else {
-    m.chapters.forEach(ch => {
-      html += `<h3 style="margin:20px 0 10px; color:red;">${ch.title}</h3>`;
-      ch.pages.forEach(p => { html += `<img src="${p}">`; });
-    });
+  // Handle Multi-file Conversion
+  window.handleFiles = async function(files) {
+    currentTextPages = [];
+    const status = document.getElementById('fileStatus');
+    const grid = document.getElementById('previewGrid');
+    const btn = document.getElementById('uploadBtn');
+    
+    status.innerText = "Converting... Please wait.";
+    btn.disabled = true;
+    grid.innerHTML = "";
+    
+    for(let file of files) {
+      const textData = await convertToText(file);
+      currentTextPages.push(textData);
+      if(currentTextPages.length <= 8) {
+        grid.innerHTML += `<img src="${textData}" class="pre-img">`;
+      }
+    }
+    status.innerText = currentTextPages.length + " images ready (Stored in Firebase)";
+    btn.disabled = false;
   }
-  chapterList.innerHTML = html;
-  window.scrollTo(0,0);
-}
 
-function closeDetail(){
-  detailPage.style.display = "none"; mangaList.style.display = "grid";
-  if(mangas.length > 0){ showcase.style.display="block"; featuredBar.style.display="block"; popularTitleBar.style.display="flex"; }
-}
+  // Firebase Real-time Listener (Sync automatically)
+  onSnapshot(collection(db, "mangas"), (snapshot) => {
+    window.mangas = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
+    renderPublic(); renderFeatured(); renderShowcase(); renderHistory(); updateMangaSelect();
+  });
+
+  // Upload Manga Meta to Firebase
+  window.uploadManga = async function() {
+    const title = document.getElementById('mangaTitle').value;
+    const imgInput = document.getElementById('mangaImg');
+    const btn = document.getElementById('createBtn');
+
+    if(!title || !imgInput.files[0]) {
+      showStatus("Title & Cover required","fail"); return;
+    }
+
+    btn.disabled = true;
+    showStatus("Connecting to Firebase...", "success");
+    const coverText = await convertToText(imgInput.files[0]);
+    
+    try {
+      await addDoc(collection(db, "mangas"), {
+        id: Date.now(),
+        name: title,
+        img: coverText,
+        chapters: []
+      });
+      document.getElementById('mangaTitle').value = "";
+      imgInput.value = "";
+      showStatus("Manga Created! ✨","success");
+    } catch(e) { showStatus("Firebase Error!","fail"); }
+    btn.disabled = false;
+  }
+
+  // Upload Chapter to Firebase
+  window.uploadChapter = async function() {
+    const selectedFbId = document.getElementById('mangaSelect').value;
+    const cTitle = document.getElementById('chapterTitle').value;
+    const btn = document.getElementById('uploadBtn');
+
+    if(!selectedFbId || !cTitle || currentTextPages.length === 0){
+      showStatus("Data missing","fail"); return;
+    }
+
+    btn.disabled = true;
+    showStatus("Saving to Firebase...", "success");
+
+    try {
+      const targetManga = window.mangas.find(m => m.fbId === selectedFbId);
+      const updatedChapters = [...targetManga.chapters, { title: cTitle, pages: currentTextPages }];
+      
+      await updateDoc(doc(db, "mangas", selectedFbId), {
+        chapters: updatedChapters
+      });
+
+      document.getElementById('chapterTitle').value = "";
+      document.getElementById('previewGrid').innerHTML = "";
+      document.getElementById('fileStatus').innerText = "Click to open Gallery";
+      currentTextPages = [];
+      showStatus("Chapter Uploaded! 🎉","success");
+    } catch(e) { showStatus("Upload Failed!","fail"); }
+    btn.disabled = false;
+  }
+
+  window.deleteManga = async function(fbId) {
+    if(confirm("Confirm delete from Firebase?")) {
+      try {
+        await deleteDoc(doc(db, "mangas", fbId));
+        showStatus("Deleted Forever","success");
+      } catch(e) { showStatus("Error deleting","fail"); }
+    }
+  }
+
+  // --- Original UI Functions (Restored) ---
+  window.enterSite = () => {
+    document.getElementById('intro').classList.add("fade-out");
+    setTimeout(() => { 
+      document.getElementById('intro').style.display="none"; 
+      document.getElementById('mainHeader').style.display="block"; 
+    }, 600);
+  }
+
+  document.getElementById('themeBtn').onclick = () => {
+    document.body.classList.toggle("light");
+    document.getElementById('themeBtn').innerText = document.body.classList.contains("light") ? "🌞" : "🌙";
+  }
+
+  window.toggleAdmin = () => document.getElementById('adminSidebar').classList.toggle("show");
+
+  window.checkPass = () => {
+    if(document.getElementById('adminPass').value === "Tomatochitsanmg03"){
+      document.getElementById('loginBox').style.display="none"; 
+      document.getElementById('adminForm').style.display="block";
+      showStatus("Welcome Admin","success");
+    } else showStatus("Access Denied","fail");
+  }
+
+  function showStatus(t,type){
+    const s = document.getElementById('uploadStatus');
+    s.innerText=t; s.className=type+" show";
+    setTimeout(()=>s.className="",2000);
+  }
+
+  function updateMangaSelect(){
+    document.getElementById('mangaSelect').innerHTML = window.mangas.map(m => `<option value="${m.fbId}">${m.name}</option>`).join('');
+  }
+
+  function renderPublic(){
+    document.getElementById('mangaList').innerHTML = window.mangas.map(m => `
+      <div class="manga" onclick="openManga('${m.fbId}')">
+        <img src="${m.img}">
+        <p>${m.name}</p>
+      </div>`).join('');
+  }
+
+  function renderFeatured(){
+    const bar = document.getElementById('featuredBar');
+    const title = document.getElementById('popularTitleBar');
+    if(window.mangas.length > 0) { bar.style.display="block"; title.style.display="flex"; }
+    else { bar.style.display="none"; title.style.display="none"; }
+    document.getElementById('featuredTrack').innerHTML = window.mangas.map(m => `<div class="featuredItem" onclick="openManga('${m.fbId}')"><img src="${m.img}"></div>`).join('');
+  }
+
+  function renderShowcase(){
+    const sc = document.getElementById('showcase');
+    if(window.mangas.length > 0) sc.style.display="block";
+    else sc.style.display="none";
+    document.getElementById('showcaseTrack').innerHTML = window.mangas.map(m => `<div class="showcaseItem"><img src="${m.img}"></div>`).join('');
+  }
+
+  function renderHistory(){
+    document.getElementById('historyList').innerHTML = window.mangas.map(m => `
+      <div class="historyItem">
+        <img src="${m.img}">
+        <div class="historyInfo"><b>${m.name}</b><br>${m.chapters.length} Chaps</div>
+        <div style="color:red; cursor:pointer;" onclick="deleteManga('${m.fbId}')">🗑️</div>
+      </div>`).join('');
+  }
+
+  window.openManga = function(fbId){
+    const m = window.mangas.find(x => x.fbId === fbId);
+    document.getElementById('mangaList').style.display = "none"; 
+    document.getElementById('showcase').style.display = "none"; 
+    document.getElementById('featuredBar').style.display = "none";
+    document.getElementById('popularTitleBar').style.display = "none";
+    document.getElementById('detailPage').style.display = "block";
+    document.getElementById('detailName').innerText = m.name;
+    
+    let html = "";
+    if(m.chapters.length === 0) html = "<p style='text-align:center; opacity:0.5;'>Empty Library</p>";
+    else {
+      m.chapters.forEach(ch => {
+        html += `<h3 style="margin:20px 0 10px; color:red; padding-left:10px;">${ch.title}</h3>`;
+        ch.pages.forEach(p => { html += `<img src="${p}" style="width:100%; display:block; margin-bottom:2px;">`; });
+      });
+    }
+    document.getElementById('chapterList').innerHTML = html;
+    window.scrollTo(0,0);
+  }
+
+  window.closeDetail = function(){
+    document.getElementById('detailPage').style.display = "none"; 
+    document.getElementById('mangaList').style.display = "grid";
+    if(window.mangas.length > 0){ 
+      document.getElementById('showcase').style.display="block"; 
+      document.getElementById('featuredBar').style.display="block"; 
+      document.getElementById('popularTitleBar').style.display="flex"; 
+    }
+  }
 </script>
 </body>
 </html>
-

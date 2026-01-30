@@ -6,220 +6,60 @@
 <title>Tomato Manga Zone</title>
 
 <style>
+/* CSS styles as per original design */
 *{margin:0;padding:0;box-sizing:border-box}
-
-/* ===== THEME ===== */
-:root{
-  --bg:#000;
-  --text:#fff;
-  --card:#111;
-  --accent:#ff2a2a;
-}
-body.light{
-  --bg:#fff;
-  --text:#000;
-  --card:#f2f2f2;
-  --accent:#ff2a2a;
-}
-
-html,body{
-  width:100%;
-  min-height:100%;
-  background:var(--bg);
-  color:var(--text);
-  font-family:Arial,sans-serif;
-  transition:.35s;
-}
-
-/* ================= INTRO ================= */
-#intro{
-  position:fixed;
-  inset:0;
-  background:black;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  z-index:3000;
-  transition:.6s;
-  overflow:hidden;
-}
+:root{ --bg:#000; --text:#fff; --card:#111; --accent:#ff2a2a; }
+body.light{ --bg:#fff; --text:#000; --card:#f2f2f2; --accent:#ff2a2a; }
+html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text); font-family:Arial,sans-serif; transition:.35s; }
+#intro{ position:fixed; inset:0; background:black; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:3000; transition:.6s; overflow:hidden; }
 #intro.fade-out{opacity:0}
 #intro h1{color:red;font-size:30px;z-index:2}
 #intro p{opacity:.8;z-index:2}
-#intro button{
-  margin-top:25px;
-  padding:12px 30px;
-  border:none;
-  border-radius:25px;
-  background:red;
-  color:white;
-  cursor:pointer;
-  z-index:2;
-}
-
-#introBg{
-  position:absolute;
-  inset:-40%;
-  display:grid;
-  grid-template-columns:repeat(auto-fill,160px);
-  gap:18px;
-  opacity:.8;
-  filter:grayscale(35%);
-  animation:introMove 90s linear infinite;
-  z-index:1;
-}
+#intro button{ margin-top:25px; padding:12px 30px; border:none; border-radius:25px; background:red; color:white; cursor:pointer; z-index:2; }
+#introBg{ position:absolute; inset:-40%; display:grid; grid-template-columns:repeat(auto-fill,160px); gap:18px; opacity:.8; filter:grayscale(35%); animation:introMove 90s linear infinite; z-index:1; }
 #introBg svg{width:160px;height:220px;border-radius:6px}
-@keyframes introMove{
-  from{transform:translate(0,0)}
-  to{transform:translate(-600px,-500px)}
-}
-
-/* ================= HEADER ================= */
-#mainHeader{
-  position:sticky;
-  top:0;
-  z-index:2000;
-  background:linear-gradient(180deg,#111,#000);
-  box-shadow:0 6px 18px rgba(0,0,0,.7);
-}
+@keyframes introMove{ from{transform:translate(0,0)} to{transform:translate(-600px,-500px)} }
+#mainHeader{ position:sticky; top:0; z-index:2000; background:linear-gradient(180deg,#111,#000); box-shadow:0 6px 18px rgba(0,0,0,.7); }
 body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
-
-#headerInner{
-  height:64px;
-  display:flex;
-  align-items:center;
-  padding:0 14px;
-}
+#headerInner{ height:64px; display:flex; align-items:center; padding:0 14px; }
 #headerLeft{width:170px}
-.searchWrap{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  padding:6px 12px;
-  background:var(--card);
-  border-radius:20px;
-}
-.searchWrap input{
-  width:100px;
-  background:none;
-  border:none;
-  outline:none;
-  color:var(--text);
-  font-size:13px;
-}
-
-#headerCenter{
-  flex:1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  line-height: 1.1;
-}
-.logo-top {
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--text);
-  letter-spacing: 3px;
-  text-transform: uppercase;
-}
-.logo-bottom {
-  font-size: 15px;
-  font-weight: 900;
-  color: var(--accent);
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
+.searchWrap{ display:flex; align-items:center; gap:6px; padding:6px 12px; background:var(--card); border-radius:20px; }
+.searchWrap input{ width:100px; background:none; border:none; outline:none; color:var(--text); font-size:13px; }
+#headerCenter{ flex:1; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; }
+.logo-top { font-size: 13px; font-weight: 400; color: var(--text); letter-spacing: 3px; text-transform: uppercase; }
+.logo-bottom { font-size: 15px; font-weight: 900; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; }
 #headerRight{width:120px;display:flex;justify-content:flex-end;gap:8px}
-
-.iconBtn{
-  width:40px;height:40px;border-radius:50%;background:var(--card);
-  display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;
-}
-
+.iconBtn{ width:40px;height:40px;border-radius:50%;background:var(--card); display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer; }
 #headerLine{height:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent)}
-
-/* ===== SHOWCASE ===== */
 #showcase{width:100%;aspect-ratio:14/7;max-height:280px;overflow:hidden;position:relative;background:#000;display:none}
 #showcaseTrack{display:flex;height:100%;transition:transform 1s ease}
 .showcaseItem{min-width:100%;height:100%}
 .showcaseItem img{width:100%;height:100%;object-fit:cover}
-
-#popularTitleBar {
-  padding: 20px 15px 10px;
-  display: none; 
-  align-items: center;
-  gap: 12px;
-}
-.pop-text {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--accent);
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  white-space: nowrap;
-}
-.pop-line {
-  height: 2px;
-  flex: 1;
-  background: linear-gradient(90deg, var(--accent), transparent);
-  border-radius: 2px;
-}
-
+#popularTitleBar { padding: 20px 15px 10px; display: none; align-items: center; gap: 12px; }
+.pop-text { font-size: 16px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; white-space: nowrap; }
+.pop-line { height: 2px; flex: 1; background: linear-gradient(90deg, var(--accent), transparent); border-radius: 2px; }
 #featuredBar{width:100%;padding:14px 12px;overflow-x:auto;border-bottom:1px solid #222;display:none}
 #featuredTrack{display:flex;gap:14px}
 .featuredItem img{width:130px;height:180px;object-fit:cover;border-radius:8px}
-
-/* ================= ADMIN ================= */
-#adminSidebar{
-  position:fixed;top:0;right:-320px;width:320px;height:100%;
-  background:#111;padding:15px;transition:.4s;z-index:2500;overflow-y:auto;
-}
+#adminSidebar{ position:fixed;top:0;right:-320px;width:320px;height:100%; background:#111;padding:15px;transition:.4s;z-index:2500;overflow-y:auto; }
 #adminSidebar.show{right:0}
-#adminSidebar input,#adminSidebar button{
-  width:100%;margin:6px 0 12px;padding:12px;background:#222;color:white;border:none;border-radius:6px;
-}
+#adminSidebar input,#adminSidebar button{ width:100%;margin:6px 0 12px;padding:12px;background:#222;color:white;border:none;border-radius:6px; }
 #adminBack{position:sticky;bottom:0;padding:10px;background:#1a1a1a;text-align:center;cursor:pointer}
-
-.upload-zone {
-  border: 2px dashed #444;
-  padding: 20px;
-  text-align: center;
-  border-radius: 8px;
-  margin: 10px 0;
-  background: #1a1a1a;
-  color: #888;
-  cursor: pointer;
-  transition: .3s;
-}
+.upload-zone { border: 2px dashed #444; padding: 20px; text-align: center; border-radius: 8px; margin: 10px 0; background: #1a1a1a; color: #888; cursor: pointer; transition: .3s; }
 .upload-zone:active { border-color: var(--accent); background: #222; }
 .upload-zone b { color: var(--accent); display: block; margin-bottom: 5px; }
-
-#previewGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 5px;
-  margin-top: 10px;
-  margin-bottom: 15px;
-}
+#previewGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; margin-bottom: 15px; }
 .pre-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 4px; border: 1px solid #333; }
-
-/* HISTORY & LIST */
 #mangaList{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:15px;padding:20px}
 .manga img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:6px}
 .manga p{text-align:center;font-size:13px;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-
 #detailPage{display:none;padding:15px}
 .backBtn{background:#333;color:white;padding:8px;margin-bottom:15px;border-radius:4px;cursor:pointer;border:none}
 #chapterList img{width:100%;display:block;margin-bottom:2px}
-
 #uploadStatus{position:fixed;bottom:20px;right:20px;padding:7px 14px;font-size:13px;border-radius:6px;background:#111;opacity:0;transition:.3s;z-index:4000}
 #uploadStatus.show{opacity:1}
 #uploadStatus.success{border:1px solid #0f0;color:#0f0}
 #uploadStatus.fail{border:1px solid #f00;color:#f00}
-
 #historyList{max-height:200px;overflow-y:auto}
 .historyItem{display:flex;align-items:center;gap:10px;padding:6px;margin-bottom:6px;background:#1a1a1a;border-radius:6px}
 .historyItem img{width:45px;height:60px;object-fit:cover;border-radius:4px}
@@ -310,14 +150,14 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+  // Fixed Config using Tomato Web data from
   const firebaseConfig = {
-    // API Key fixed: replaced '1' with 'I'
-    apiKey: "AIzaSyBBr71Dk5pFn8UkIn5D0oBYeQWPvFcKX4",
+    apiKey: "AIzaSyBBr71Dk5pFn8UkIn5D0oBYeQWPvFcKX4", 
     authDomain: "tomato-manga-zone.firebaseapp.com",
     projectId: "tomato-manga-zone",
     storageBucket: "tomato-manga-zone.firebasestorage.app",
     messagingSenderId: "28164821885",
-    appId: "1:28164821885:web:d23cc3faa8d8dbae22f214",
+    appId: "1:28164821885:web:d23cc3faa8d8dbae22f214", // Matches
     measurementId: "G-BNR7BQP2VC"
   };
 
@@ -420,10 +260,7 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
       document.getElementById('fileStatus').innerText = "Click to open Gallery";
       currentTextPages = [];
       showStatus("Chapter Uploaded! 🎉","success");
-    } catch(e) { 
-      console.error(e);
-      showStatus("Upload Failed!","fail"); 
-    }
+    } catch(e) { showStatus("Upload Failed!","fail"); }
     btn.disabled = false;
   }
 
@@ -534,3 +371,4 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
 </script>
 </body>
 </html>
+

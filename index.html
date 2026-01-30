@@ -20,8 +20,13 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
 
 /* --- PREMIUM CINEMATIC ANIMATIONS --- */
 @keyframes lobbyEntrance {
-  0% { opacity: 0; filter: blur(8px); transform: translateY(60px); }
-  100% { opacity: 1; filter: blur(0px); transform: translateY(0); }
+  0% { opacity: 0; transform: scale(0.95) translateY(30px); filter: blur(10px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0px); }
+}
+
+@keyframes lobbyExit {
+  0% { opacity: 1; transform: scale(1) translateY(0); }
+  100% { opacity: 0; transform: scale(1.05) translateY(-30px); filter: blur(10px); }
 }
 
 @keyframes mangaSlideUp {
@@ -340,12 +345,25 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
     border: 1px solid rgba(255,255,255,0.05);
     cursor: pointer;
     transition: 0.3s;
+    position: relative;
 }
+.chapter-item.read { opacity: 0.5; border: 1px solid var(--accent); }
 .chapter-item:active { transform: scale(0.97); background: var(--accent); }
 .chapter-item span { font-weight: 700; font-size: 15px; }
-.chapter-item .play-icon { font-size: 12px; opacity: 0.6; }
 
-/* READING LOBBY */
+/* View Count Styling */
+.view-count {
+  font-size: 12px;
+  opacity: 0.8;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  position: absolute;
+  bottom: 8px;
+  right: 20px;
+}
+
+/* READING LOBBY - SMOOTH PERFORMANCE */
 #readingLobby {
     display: none;
     position: fixed;
@@ -353,13 +371,111 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
     background: #000;
     z-index: 6000;
     overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
 }
-#readingLobby img { width: 100%; display: block; }
+
+/* Smooth Scroll for Continuous Mode */
+#readingLobby:not(.page-mode) {
+    scroll-behavior: smooth;
+}
+
+#readingLobby.page-mode { 
+    overflow: hidden;
+    touch-action: none; /* Disable default scrolling for custom page logic */
+}
+
+.lobby-animate-in { animation: lobbyEntrance 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.lobby-animate-out { animation: lobbyExit 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+
+#pagesContainer { 
+    display: flex; 
+    flex-direction: column; 
+    width: 100%; 
+    will-change: transform;
+}
+#pagesContainer img { 
+    width: 100%; 
+    display: block; 
+    height: auto;
+    pointer-events: none;
+}
+
+/* --- ENHANCED PAGE MODE RATIO & NAVIGATION --- */
+#readingLobby.page-mode #pagesContainer {
+    flex-direction: row;
+    height: 100vh;
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+#readingLobby.page-mode .page-item {
+    min-width: 100vw;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+/* This ensures images maintain original ratio but fit within the screen like MangaDex */
+#readingLobby.page-mode .page-item img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+
 .reading-header {
     position: sticky; top: 0; background: rgba(0,0,0,0.8);
-    backdrop-filter: blur(10px); padding: 15px; z-index: 10;
-    display: flex; align-items: center; gap: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px); padding: 15px; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1);
 }
+
+/* READING LOBBY NAV PANEL */
+.reading-nav-panel {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+    background: #111;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    margin-top: 20px;
+}
+#readingLobby.page-mode .reading-nav-panel { display: none; } 
+
+.nav-btn {
+    padding: 12px 25px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    min-width: 100px;
+    text-align: center;
+}
+.nav-btn.back-to-lobby { background: #333; }
+.nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+/* Chapter Selection & Settings Popups */
+.reader-controls { display: flex; align-items: center; gap: 10px; }
+#chapterSelectPopup {
+    position: fixed; bottom: -100%; left: 0; width: 100%; max-height: 60vh;
+    background: #111; z-index: 7000; padding: 20px; border-radius: 20px 20px 0 0;
+    overflow-y: auto; transition: 0.4s cubic-bezier(0.85, 0, 0.15, 1);
+}
+#chapterSelectPopup.show { bottom: 0; }
+.chapter-option-item { padding: 15px; border-bottom: 1px solid #222; font-weight: bold; }
+
+#settingsPopup {
+    position: absolute; top: 70px; right: 15px; background: #1a1a1a;
+    border: 1px solid var(--accent); border-radius: 12px; padding: 10px;
+    display: none; flex-direction: column; gap: 5px; min-width: 140px; z-index: 110;
+}
+.setting-choice { padding: 12px; border-radius: 8px; cursor: pointer; text-align: center; font-size: 14px; font-weight: bold; }
+.setting-choice.active { background: var(--accent); color: white; }
 
 #adminSidebar{ position:fixed;top:0;right:-320px;width:320px;height:100%; background:rgba(15,15,15,0.95); backdrop-filter: blur(20px); padding:25px; transition: 0.5s cubic-bezier(0.85, 0, 0.15, 1); z-index:6000; overflow-y:auto; box-shadow: -10px 0 30px rgba(0,0,0,0.8); }
 #adminSidebar.show{right:0}
@@ -491,16 +607,37 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
 <div id="readingLobby">
     <div class="reading-header">
         <div onclick="closeReadingLobby()" style="cursor:pointer; font-weight:900;">← BACK</div>
-        <span id="readingTitle" style="font-weight:bold;">Chapter Name</span>
+        <div id="readingTitle" onclick="toggleChapterPopup()" style="font-weight:bold; cursor:pointer;">Chapter Name ▾</div>
+        <div class="reader-controls">
+            <div class="iconBtn" onclick="toggleSettingsPopup(event)">
+                <svg viewBox="0 0 24 24" fill="white"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            </div>
+            <div id="settingsPopup">
+                <div class="setting-choice active" id="modeScroll" onclick="setReadMode('scroll')">SCROLL MODE</div>
+                <div class="setting-choice" id="modePage" onclick="setReadMode('page')">PAGE MODE</div>
+            </div>
+        </div>
     </div>
+
     <div id="pagesContainer"></div>
+
+    <div class="reading-nav-panel">
+        <button class="nav-btn back-to-lobby" id="backToDetailBtn">Back</button>
+        <button class="nav-btn" id="nextChapterBtn">Next</button>
+    </div>
+</div>
+
+<div id="chapterSelectPopup">
+    <h3 style="margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">Select Chapter</h3>
+    <div id="popupChapterList"></div>
+    <button onclick="toggleChapterPopup()" style="width:100%; margin-top:15px; padding:10px; background:#333; color:white; border:none; border-radius:10px;">CLOSE</button>
 </div>
 
 <div id="uploadStatus"></div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
   const IMGBB_API_KEY = "1514f8313ed6947ee69bcdec03b70517";
   const firebaseConfig = {
@@ -524,13 +661,38 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
   const list = document.getElementById('mangaList');
   list.innerHTML = Array(8).fill(0).map(() => `<div class="skeleton" style="width:100%; aspect-ratio:3/4;"></div>`).join('');
   
-  async function uploadToCloud(file) {
-      let formData = new FormData();
-      formData.append("image", file);
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData });
-      const data = await res.json();
-      if(!data.success) throw new Error("Fail");
-      return data.data.url;
+  async function processAndUpload(file) {
+      return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = (event) => {
+              const img = new Image();
+              img.src = event.target.result;
+              img.onload = async () => {
+                  const canvas = document.createElement('canvas');
+                  const ctx = canvas.getContext('2d');
+                  let width = img.width, height = img.height;
+                  const maxDim = 2000;
+                  if (width > maxDim || height > maxDim) {
+                      const ratio = Math.min(maxDim / width, maxDim / height);
+                      width *= ratio; height *= ratio;
+                  }
+                  canvas.width = width; canvas.height = height;
+                  ctx.imageSmoothingEnabled = true;
+                  ctx.imageSmoothingQuality = 'high';
+                  ctx.drawImage(img, 0, 0, width, height);
+                  canvas.toBlob(async (blob) => {
+                      try {
+                          let formData = new FormData();
+                          formData.append("image", blob);
+                          const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData });
+                          const data = await res.json();
+                          resolve(data.data.url);
+                      } catch (e) { reject(e); }
+                  }, 'image/jpeg', 0.9);
+              };
+          };
+      });
   }
 
   const introBg = document.getElementById('introBg');
@@ -541,6 +703,9 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
   onSnapshot(collection(db, "mangas"), (snapshot) => {
     window.mangas = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
     renderPublic(); renderFeatured(); renderShowcase(); renderHistory(); updateMangaSelect(); renderBookmarks();
+    if(document.getElementById('detailPage').style.display === "block" && window.currentOpenMangaFbId) {
+        openManga(window.currentOpenMangaFbId);
+    }
   });
 
   window.uploadManga = async function() {
@@ -551,9 +716,9 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
     const btn = document.getElementById('createBtn');
     const selectedGenres = Array.from(document.querySelectorAll('.genre-checkbox:checked')).map(cb => cb.value);
     if(!title || !imgInput.files[0] || selectedGenres.length === 0) return showStatus("Required fields/Genres empty","fail");
-    btn.disabled = true; showStatus("Uploading...", "success");
+    btn.disabled = true; showStatus("Enhancing & Uploading...", "success");
     try {
-      const imageUrl = await uploadToCloud(imgInput.files[0]);
+      const imageUrl = await processAndUpload(imgInput.files[0]);
       await addDoc(collection(db, "mangas"), { id: Date.now(), name: title, img: imageUrl, rating: rating, genres: selectedGenres, description: description || "No description available.", chapters: [] });
       document.getElementById('mangaTitle').value = ""; document.getElementById('mangaDesc').value = ""; imgInput.value = ""; document.querySelectorAll('.genre-checkbox').forEach(cb => cb.checked = false);
       showStatus("Success! ✨","success");
@@ -564,19 +729,20 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
   window.uploadChapter = async function() {
     const selectedFbId = document.getElementById('mangaSelect').value;
     const cTitle = document.getElementById('chapterTitle').value;
-    const files = document.getElementById('chapterFiles').files;
+    const files = Array.from(document.getElementById('chapterFiles').files);
     const btn = document.getElementById('uploadBtn');
     if(!selectedFbId || !cTitle || files.length === 0) return showStatus("Missing info","fail");
-    btn.disabled = true; showStatus(`Syncing ${files.length} pages...`, "success");
+    btn.disabled = true; 
+    showStatus(`Parallel Uploading ${files.length} pages...`, "success");
     try {
-      let cloudUrls = [];
-      for(let file of files) { cloudUrls.push(await uploadToCloud(file)); }
+      const cloudUrls = await Promise.all(files.map(file => processAndUpload(file)));
       const targetManga = window.mangas.find(m => m.fbId === selectedFbId);
-      const updatedChapters = [...(targetManga.chapters || []), { title: cTitle, pages: cloudUrls }];
+      const updatedChapters = [...(targetManga.chapters || []), { title: cTitle, pages: cloudUrls, views: 0 }];
       await updateDoc(doc(db, "mangas", selectedFbId), { chapters: updatedChapters });
-      document.getElementById('chapterTitle').value = ""; document.getElementById('fileStatus').innerText = "No files selected";
-      showStatus("Published! 🎉","success");
-    } catch(e) { showStatus("Failed","fail"); }
+      document.getElementById('chapterTitle').value = ""; 
+      document.getElementById('fileStatus').innerText = "No files selected";
+      showStatus("Chapter Published! 🚀","success");
+    } catch(e) { console.error(e); showStatus("Upload Failed","fail"); }
     btn.disabled = false;
   }
 
@@ -640,7 +806,7 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
   function startAutoScroll() {
     cancelAnimationFrame(animationId);
     const track = document.getElementById('featuredTrack');
-    function step() { if (!isDown) { currentPos -= scrollSpeed; const singleSetWidth = track.scrollWidth / 3; if (Math.abs(currentPos) >= singleSetWidth) currentPos = 0; track.style.transform = `translateX(${currentPos}px)`; } animationId = requestAnimationFrame(step); }
+    function step() { if (!isDown && track) { currentPos -= scrollSpeed; const singleSetWidth = track.scrollWidth / 3; if (Math.abs(currentPos) >= singleSetWidth) currentPos = 0; track.style.transform = `translateX(${currentPos}px)`; } animationId = requestAnimationFrame(step); }
     animationId = requestAnimationFrame(step);
   }
 
@@ -659,7 +825,11 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
     document.getElementById('showcaseTrack').innerHTML = window.mangas.map(m => `<div class="showcaseItem"><img src="${m.img}"></div>`).join('');
     if(window.showcaseTimer) clearInterval(window.showcaseTimer);
     let index = 0;
-    window.showcaseTimer = setInterval(() => { index = (index + 1) % window.mangas.length; if(document.getElementById('showcaseTrack')) document.getElementById('showcaseTrack').style.transform = `translateX(-${index * 100}%)`; }, 5000);
+    window.showcaseTimer = setInterval(() => { 
+        index = (index + 1) % window.mangas.length; 
+        const track = document.getElementById('showcaseTrack');
+        if(track) track.style.transform = `translateX(-${index * 100}%)`; 
+    }, 5000);
   }
 
   function renderHistory(){
@@ -675,8 +845,33 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
       </div>`).join('');
   }
 
+  async function markChapterReadAndCount(mangaId, chapterIdx) {
+    let readHistory = JSON.parse(localStorage.getItem('read_chapters') || "{}");
+    if(!readHistory[mangaId]) readHistory[mangaId] = [];
+    
+    if(!readHistory[mangaId].includes(chapterIdx)) {
+        readHistory[mangaId].push(chapterIdx);
+        localStorage.setItem('read_chapters', JSON.stringify(readHistory));
+
+        try {
+          const m = window.mangas.find(x => x.fbId === mangaId);
+          if(m && m.chapters && m.chapters[chapterIdx]) {
+            const upChapters = [...m.chapters];
+            upChapters[chapterIdx].views = (upChapters[chapterIdx].views || 0) + 1;
+            await updateDoc(doc(db, "mangas", mangaId), { chapters: upChapters });
+          }
+        } catch(e) { console.error("Count Error", e); }
+    }
+  }
+
+  function isChapterRead(mangaId, chapterIdx) {
+    let readHistory = JSON.parse(localStorage.getItem('read_chapters') || "{}");
+    return readHistory[mangaId] && readHistory[mangaId].includes(chapterIdx);
+  }
+
   window.openManga = function(fbId){
     if (isDown) return;
+    window.currentOpenMangaFbId = fbId;
     const m = window.mangas.find(x => x.fbId === fbId);
     document.getElementById('mainContentWrapper').style.display = "none"; 
     document.getElementById('bookmarkPage').style.display = "none";
@@ -704,22 +899,183 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
     if(!m.chapters || m.chapters.length === 0) html = "<p style='text-align:center; opacity:0.3; padding:50px;'>NO CHAPTERS YET</p>";
     else {
       m.chapters.forEach((ch, idx) => {
-        html += `<div class="chapter-item" onclick="openReadingLobby('${fbId}', ${idx})"><span>${ch.title}</span><span class="play-icon">▶ READ</span></div>`;
+        const readClass = isChapterRead(fbId, idx) ? 'read' : '';
+        const viewCount = ch.views || 0;
+        html += `
+          <div class="chapter-item ${readClass}" onclick="openReadingLobby('${fbId}', ${idx})">
+            <span>${ch.title}</span>
+            <div class="view-count"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" opacity="0.7"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg> ${viewCount}</div>
+          </div>`;
       });
     }
     document.getElementById('chapterItemsContainer').innerHTML = html;
     window.scrollTo(0,0);
   }
 
-  window.openReadingLobby = function(fbId, chIdx) {
+  // --- NEW READING ENGINE (SCROLL & PAGE) ---
+  let currentReadMode = 'scroll'; 
+  let currentPageIndex = 0;
+  let totalPages = 0;
+
+  window.openReadingLobby = async function(fbId, chIdx) {
       const m = window.mangas.find(x => x.fbId === fbId);
       const ch = m.chapters[chIdx];
-      document.getElementById('readingTitle').innerText = ch.title;
-      document.getElementById('pagesContainer').innerHTML = ch.pages.map(p => `<img src="${p}" loading="lazy">`).join('');
-      document.getElementById('readingLobby').style.display = "block";
+      
+      await markChapterReadAndCount(fbId, chIdx);
+      
+      const lobby = document.getElementById('readingLobby');
+      document.getElementById('readingTitle').innerText = ch.title + " ▾";
+      
+      totalPages = ch.pages.length;
+      currentPageIndex = 0;
+      
+      renderPages(ch.pages);
+      
+      lobby.style.display = "block";
+      lobby.classList.remove('lobby-animate-out');
+      lobby.classList.add('lobby-animate-in');
+      lobby.scrollTo(0,0);
+
+      let popHtml = m.chapters.map((c, i) => `<div class="chapter-option-item" onclick="openReadingLobby('${fbId}', ${i}); toggleChapterPopup();">${c.title}</div>`).join('');
+      document.getElementById('popupChapterList').innerHTML = popHtml;
+
+      const backBtn = document.getElementById('backToDetailBtn');
+      const nextBtn = document.getElementById('nextChapterBtn');
+      backBtn.onclick = () => { closeReadingLobby(); };
+      
+      if(chIdx + 1 < m.chapters.length) {
+          nextBtn.disabled = false;
+          nextBtn.innerText = "Next";
+          nextBtn.onclick = () => openReadingLobby(fbId, chIdx + 1);
+      } else {
+          nextBtn.disabled = true;
+          nextBtn.innerText = "End";
+      }
+
+      applyReadMode();
   }
 
-  window.closeReadingLobby = () => document.getElementById('readingLobby').style.display = "none";
+  function renderPages(pages) {
+      const container = document.getElementById('pagesContainer');
+      if(currentReadMode === 'scroll') {
+          container.innerHTML = pages.map(p => `<img src="${p}" loading="lazy">`).join('');
+          container.style.transform = `none`;
+      } else {
+          container.innerHTML = pages.map(p => `<div class="page-item"><img src="${p}" loading="lazy"></div>`).join('');
+          container.style.transform = `translateX(0)`;
+      }
+  }
+
+  window.setReadMode = function(mode) {
+      currentReadMode = mode;
+      document.getElementById('modeScroll').classList.toggle('active', mode === 'scroll');
+      document.getElementById('modePage').classList.toggle('active', mode === 'page');
+      document.getElementById('settingsPopup').style.display = 'none';
+      
+      const m = window.mangas.find(x => x.fbId === window.currentOpenMangaFbId);
+      const titleClean = document.getElementById('readingTitle').innerText.replace(" ▾", "");
+      const chIdx = m.chapters.findIndex(c => c.title === titleClean);
+      
+      applyReadMode();
+      renderPages(m.chapters[chIdx].pages);
+  };
+
+  function applyReadMode() {
+      const lobby = document.getElementById('readingLobby');
+      if(currentReadMode === 'page') {
+          lobby.classList.add('page-mode');
+          initPageTouchEvents();
+      } else {
+          lobby.classList.remove('page-mode');
+          // Clear touch events for scroll mode
+          const container = document.getElementById('pagesContainer');
+          container.ontouchstart = null;
+          container.ontouchmove = null;
+          container.ontouchend = null;
+          container.onclick = null;
+      }
+  }
+
+  /* --- ENHANCED SMOOTH PAGE NAVIGATION & SNAP --- */
+  function initPageTouchEvents() {
+      const container = document.getElementById('pagesContainer');
+      let touchStartX = 0;
+      let touchStartY = 0;
+      let isMoving = false;
+      
+      container.ontouchstart = e => { 
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+          isMoving = true;
+          container.style.transition = 'none'; 
+      };
+
+      container.ontouchmove = e => {
+          if (!isMoving) return;
+          const currentX = e.touches[0].clientX;
+          const currentY = e.touches[0].clientY;
+          
+          if (Math.abs(currentX - touchStartX) > Math.abs(currentY - touchStartY)) {
+            const diff = currentX - touchStartX;
+            const offset = -(currentPageIndex * window.innerWidth) + diff;
+            container.style.transform = `translateX(${offset}px)`;
+            e.preventDefault();
+          }
+      };
+
+      container.ontouchend = e => {
+          if (!isMoving) return;
+          isMoving = false;
+          container.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
+          
+          const touchEndX = e.changedTouches[0].clientX;
+          const diff = touchStartX - touchEndX;
+          
+          // Sensitivity threshold
+          if (Math.abs(diff) > window.innerWidth / 10) { 
+              if (diff > 0 && currentPageIndex < totalPages - 1) currentPageIndex++;
+              else if (diff < 0 && currentPageIndex > 0) currentPageIndex--;
+          }
+          container.style.transform = `translateX(-${currentPageIndex * 100}vw)`;
+      };
+
+      // Tap Navigation
+      container.onclick = (e) => {
+        if(currentReadMode !== 'page') return;
+        const width = window.innerWidth;
+        if(e.clientX > width * 0.65 && currentPageIndex < totalPages - 1) {
+            currentPageIndex++;
+        } else if(e.clientX < width * 0.35 && currentPageIndex > 0) {
+            currentPageIndex--;
+        }
+        container.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
+        container.style.transform = `translateX(-${currentPageIndex * 100}vw)`;
+      };
+  }
+
+  window.toggleSettingsPopup = (e) => {
+      e.stopPropagation();
+      const pop = document.getElementById('settingsPopup');
+      pop.style.display = pop.style.display === 'flex' ? 'none' : 'flex';
+  };
+
+  window.toggleChapterPopup = () => {
+      document.getElementById('chapterSelectPopup').classList.toggle('show');
+  };
+
+  window.closeReadingLobby = () => {
+      const lobby = document.getElementById('readingLobby');
+      lobby.classList.remove('lobby-animate-in');
+      lobby.classList.add('lobby-animate-out');
+      setTimeout(() => {
+          lobby.style.display = "none";
+          lobby.classList.remove('lobby-animate-out');
+          if(window.currentOpenMangaFbId) openManga(window.currentOpenMangaFbId);
+      }, 300);
+  }
+
+  window.onclick = () => { document.getElementById('settingsPopup').style.display = 'none'; };
+
   window.closeDetail = () => { document.getElementById('detailPage').style.display = "none"; document.getElementById('mainContentWrapper').style.display = "block"; window.scrollTo(0,0); }
 
   window.toggleBookmark = function(fbId) {

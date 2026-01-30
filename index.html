@@ -311,7 +311,8 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
   import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
   const firebaseConfig = {
-    apiKey: "AIzaSyBBr71Dk5pFn8Uk1nn5D0oBYeQWPvFcKX4",
+    // API Key fixed: replaced '1' with 'I'
+    apiKey: "AIzaSyBBr71Dk5pFn8UkIn5D0oBYeQWPvFcKX4",
     authDomain: "tomato-manga-zone.firebaseapp.com",
     projectId: "tomato-manga-zone",
     storageBucket: "tomato-manga-zone.firebasestorage.app",
@@ -326,7 +327,6 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
   window.mangas = [];
   let currentTextPages = [];
 
-  // Intro BG Animation Loop
   const introBg = document.getElementById('introBg');
   for(let i=0;i<42;i++){
     introBg.innerHTML+=`<svg viewBox="0 0 160 220"><rect width="160" height="220" fill="#222"/><rect x="10" y="10" width="140" height="60" fill="#000"/><rect x="10" y="80" width="60" height="50" fill="#000"/><rect x="80" y="80" width="70" height="120" fill="#000"/></svg>`;
@@ -339,7 +339,6 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
       reader.onerror = e => rej(e);
   });
 
-  // Handle Multi-file Conversion
   window.handleFiles = async function(files) {
     currentTextPages = [];
     const status = document.getElementById('fileStatus');
@@ -357,17 +356,15 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
         grid.innerHTML += `<img src="${textData}" class="pre-img">`;
       }
     }
-    status.innerText = currentTextPages.length + " images ready (Stored in Firebase)";
+    status.innerText = currentTextPages.length + " images ready";
     btn.disabled = false;
   }
 
-  // Firebase Real-time Listener (Sync automatically)
   onSnapshot(collection(db, "mangas"), (snapshot) => {
     window.mangas = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
     renderPublic(); renderFeatured(); renderShowcase(); renderHistory(); updateMangaSelect();
   });
 
-  // Upload Manga Meta to Firebase
   window.uploadManga = async function() {
     const title = document.getElementById('mangaTitle').value;
     const imgInput = document.getElementById('mangaImg');
@@ -391,11 +388,13 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
       document.getElementById('mangaTitle').value = "";
       imgInput.value = "";
       showStatus("Manga Created! ✨","success");
-    } catch(e) { showStatus("Firebase Error!","fail"); }
+    } catch(e) { 
+      console.error(e);
+      showStatus("Firebase Error! Check Rules.","fail"); 
+    }
     btn.disabled = false;
   }
 
-  // Upload Chapter to Firebase
   window.uploadChapter = async function() {
     const selectedFbId = document.getElementById('mangaSelect').value;
     const cTitle = document.getElementById('chapterTitle').value;
@@ -410,7 +409,7 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
 
     try {
       const targetManga = window.mangas.find(m => m.fbId === selectedFbId);
-      const updatedChapters = [...targetManga.chapters, { title: cTitle, pages: currentTextPages }];
+      const updatedChapters = [...(targetManga.chapters || []), { title: cTitle, pages: currentTextPages }];
       
       await updateDoc(doc(db, "mangas", selectedFbId), {
         chapters: updatedChapters
@@ -421,7 +420,10 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
       document.getElementById('fileStatus').innerText = "Click to open Gallery";
       currentTextPages = [];
       showStatus("Chapter Uploaded! 🎉","success");
-    } catch(e) { showStatus("Upload Failed!","fail"); }
+    } catch(e) { 
+      console.error(e);
+      showStatus("Upload Failed!","fail"); 
+    }
     btn.disabled = false;
   }
 
@@ -434,7 +436,6 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
     }
   }
 
-  // --- Original UI Functions (Restored) ---
   window.enterSite = () => {
     document.getElementById('intro').classList.add("fade-out");
     setTimeout(() => { 
@@ -461,7 +462,7 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
   function showStatus(t,type){
     const s = document.getElementById('uploadStatus');
     s.innerText=t; s.className=type+" show";
-    setTimeout(()=>s.className="",2000);
+    setTimeout(()=>s.className="",3000);
   }
 
   function updateMangaSelect(){
@@ -495,7 +496,7 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
     document.getElementById('historyList').innerHTML = window.mangas.map(m => `
       <div class="historyItem">
         <img src="${m.img}">
-        <div class="historyInfo"><b>${m.name}</b><br>${m.chapters.length} Chaps</div>
+        <div class="historyInfo"><b>${m.name}</b><br>${(m.chapters || []).length} Chaps</div>
         <div style="color:red; cursor:pointer;" onclick="deleteManga('${m.fbId}')">🗑️</div>
       </div>`).join('');
   }
@@ -510,7 +511,7 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
     document.getElementById('detailName').innerText = m.name;
     
     let html = "";
-    if(m.chapters.length === 0) html = "<p style='text-align:center; opacity:0.5;'>Empty Library</p>";
+    if(!m.chapters || m.chapters.length === 0) html = "<p style='text-align:center; opacity:0.5;'>Empty Library</p>";
     else {
       m.chapters.forEach(ch => {
         html += `<h3 style="margin:20px 0 10px; color:red; padding-left:10px;">${ch.title}</h3>`;
@@ -533,4 +534,3 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
 </script>
 </body>
 </html>
-

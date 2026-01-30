@@ -6,64 +6,214 @@
 <title>Tomato Manga Zone</title>
 
 <style>
-/* CSS styles - မူရင်းဒီဇိုင်းအတိုင်း ထိန်းသိမ်းထားပါသည် */
-*{margin:0;padding:0;box-sizing:border-box}
-:root{ --bg:#000; --text:#fff; --card:#111; --accent:#ff2a2a; }
-body.light{ --bg:#fff; --text:#000; --card:#f2f2f2; --accent:#ff2a2a; }
-html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text); font-family:Arial,sans-serif; transition:.35s; }
-#intro{ position:fixed; inset:0; background:black; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:3000; transition:.6s; overflow:hidden; }
-#intro.fade-out{opacity:0}
-#intro h1{color:red;font-size:30px;z-index:2}
-#intro p{opacity:.8;z-index:2}
-#intro button{ margin-top:25px; padding:12px 30px; border:none; border-radius:25px; background:red; color:white; cursor:pointer; z-index:2; }
-#introBg{ position:absolute; inset:-40%; display:grid; grid-template-columns:repeat(auto-fill,160px); gap:18px; opacity:.8; filter:grayscale(35%); animation:introMove 90s linear infinite; z-index:1; }
+/* CSS styles - Premium Animation & Speed Fixes */
+*{margin:0;padding:0;box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+:root{ --bg:#000; --text:#fff; --card:#111; --accent:#ff2a2a; --glass: rgba(255, 255, 255, 0.08); --flare: rgba(255, 42, 42, 0.4); }
+body.light{ --bg:#fff; --text:#000; --card:#f2f2f2; --accent:#ff2a2a; --glass: rgba(0, 0, 0, 0.05); --flare: rgba(255, 42, 42, 0.2); }
+html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text); font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; transition:.35s; scroll-behavior: smooth; overflow-x: hidden; }
+
+/* Performance Boost */
+#mangaList, #featuredBar, #chapterList {
+  content-visibility: auto;
+  contain-intrinsic-size: 500px;
+}
+
+/* --- PREMIUM CINEMATIC ANIMATIONS --- */
+@keyframes lobbyEntrance {
+  0% { opacity: 0; filter: blur(8px); transform: translateY(60px); }
+  100% { opacity: 1; filter: blur(0px); transform: translateY(0); }
+}
+
+@keyframes mangaSlideUp {
+  0% { opacity: 0; transform: translateY(40px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes doorOpen {
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(1.5); opacity: 0; filter: blur(10px); }
+}
+
+@keyframes pulseRed {
+  0% { box-shadow: 0 0 0 0 rgba(255, 42, 42, 0.4); }
+  70% { box-shadow: 0 0 0 15px rgba(255, 42, 42, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 42, 42, 0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -468px 0; }
+  100% { background-position: 468px 0; }
+}
+
+.skeleton {
+  background: #222;
+  background-image: linear-gradient(to right, #222 0%, #333 20%, #222 40%, #222 100%);
+  background-repeat: no-repeat;
+  background-size: 800px 104px;
+  animation: shimmer 1.5s linear infinite forwards;
+  border-radius: 10px;
+}
+
+#intro { 
+  position:fixed; inset:0; background:black; display:flex; 
+  flex-direction:column; justify-content:center; align-items:center; 
+  z-index:3000; transition: 0.8s cubic-bezier(0.85, 0, 0.15, 1); 
+  overflow:hidden; 
+}
+#intro.fade-out { animation: doorOpen 0.8s forwards; pointer-events: none; }
+
+#intro h1 { color:red; font-size:35px; z-index:2; letter-spacing: 2px; text-shadow: 0 0 20px rgba(255,0,0,0.5); }
+#intro p { opacity:.6; z-index:2; letter-spacing: 5px; text-transform: uppercase; font-size: 12px; margin-top: 5px; }
+#intro button { 
+  margin-top:40px; padding:15px 45px; border:none; border-radius:30px; 
+  background:red; color:white; cursor:pointer; z-index:2; font-weight: bold;
+  letter-spacing: 2px; transition: 0.3s; animation: pulseRed 2s infinite;
+}
+
+#introBg{ position:absolute; inset:-40%; display:grid; grid-template-columns:repeat(auto-fill,160px); gap:18px; opacity:.3; filter:grayscale(100%); animation:introMove 90s linear infinite; z-index:1; }
 #introBg svg{width:160px;height:220px;border-radius:6px}
 @keyframes introMove{ from{transform:translate(0,0)} to{transform:translate(-600px,-500px)} }
-#mainHeader{ position:sticky; top:0; z-index:2000; background:linear-gradient(180deg,#111,#000); box-shadow:0 6px 18px rgba(0,0,0,.7); }
-body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
-#headerInner{ height:64px; display:flex; align-items:center; padding:0 14px; }
-#headerLeft{width:170px}
-.searchWrap{ display:flex; align-items:center; gap:6px; padding:6px 12px; background:var(--card); border-radius:20px; }
-.searchWrap input{ width:100px; background:none; border:none; outline:none; color:var(--text); font-size:13px; }
-#headerCenter{ flex:1; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; }
-.logo-top { font-size: 13px; font-weight: 400; color: var(--text); letter-spacing: 3px; text-transform: uppercase; }
-.logo-bottom { font-size: 15px; font-weight: 900; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; }
-#headerRight{width:120px;display:flex;justify-content:flex-end;gap:8px}
-.iconBtn{ width:40px;height:40px;border-radius:50%;background:var(--card); display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer; }
-#headerLine{height:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent)}
-#showcase{width:100%;aspect-ratio:14/7;max-height:280px;overflow:hidden;position:relative;background:#000;display:none}
-#showcaseTrack{display:flex;height:100%;transition:transform 1s ease}
+
+#mainContentWrapper { display: none; opacity: 0; }
+#mainContentWrapper.animate-in { display: block; animation: lobbyEntrance 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* --- PREMIUM PRO HEADER --- */
+#mainHeader { 
+  position:sticky; top:0; z-index:2000; 
+  background: var(--glass); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+#headerInner{ height:80px; display:flex; align-items:center; padding:0 18px; justify-content: space-between; overflow: hidden; position: relative;}
+
+/* Premium Search Slide System */
+#searchContainer {
+  position: absolute; left: 18px; right: 80px; height: 50px;
+  background: var(--card); border-radius: 15px; border: 1px solid var(--accent);
+  display: flex; align-items: center; padding: 0 15px;
+  transform: translateX(-120%); transition: 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  z-index: 10;
+}
+#searchContainer.active { transform: translateX(0); }
+#searchContainer input {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--text); font-size: 15px; font-weight: 500;
+}
+.searchClose { color: var(--accent); font-weight: 900; cursor: pointer; padding: 5px; font-size: 20px;}
+
+/* Logo Section */
+#headerCenter { 
+  text-align: center; transition: 0.4s; flex: 1;
+}
+#headerCenter.hide { opacity: 0; transform: scale(0.8); pointer-events: none;}
+.logo-main {
+  font-size: 18px; font-weight: 900; letter-spacing: 1px;
+  text-transform: uppercase; display: block;
+}
+.logo-main .t-red { color: var(--accent); text-shadow: 0 0 10px rgba(255,0,0,0.3); }
+.logo-sub {
+  font-size: 11px; font-weight: 400; letter-spacing: 6px; 
+  opacity: 0.6; text-transform: uppercase; margin-top: -1px; display: block;
+}
+
+#headerRight{ display:flex; align-items:center; gap:12px; }
+
+.iconBtn { 
+  width:45px; height:45px; border-radius:14px; 
+  background:rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+  display:flex; align-items:center; justify-content:center; 
+  cursor:pointer; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.iconBtn svg { width: 22px; height: 22px; fill: var(--text); transition: 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.iconBtn:active { transform: scale(0.9); background: rgba(255,255,255,0.1); } 
+
+/* Theme Icon Animation */
+.rotate-anim { transform: rotate(360deg); }
+
+#showcase{ width:95%; margin: 15px auto; border-radius: 15px; aspect-ratio:14/7; max-height:300px; overflow:hidden; position:relative; background:#000; display:none; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+#showcaseTrack{display:flex;height:100%;transition:transform 0.8s cubic-bezier(0.65, 0, 0.35, 1)}
 .showcaseItem{min-width:100%;height:100%}
 .showcaseItem img{width:100%;height:100%;object-fit:cover}
-#popularTitleBar { padding: 20px 15px 10px; display: none; align-items: center; gap: 12px; }
-.pop-text { font-size: 16px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; white-space: nowrap; }
-.pop-line { height: 2px; flex: 1; background: linear-gradient(90deg, var(--accent), transparent); border-radius: 2px; }
-#featuredBar{width:100%;padding:14px 12px;overflow-x:auto;border-bottom:1px solid #222;display:none}
-#featuredTrack{display:flex;gap:14px}
-.featuredItem img{width:130px;height:180px;object-fit:cover;border-radius:8px}
-#adminSidebar{ position:fixed;top:0;right:-320px;width:320px;height:100%; background:#111;padding:15px;transition:.4s;z-index:2500;overflow-y:auto; }
+
+#popularTitleBar { padding: 25px 20px 10px; display: none; align-items: center; gap: 15px; }
+.pop-text { font-size: 18px; font-weight: 800; color: var(--text); text-transform: uppercase; letter-spacing: 2px; }
+.pop-line { height: 3px; flex: 1; background: linear-gradient(90deg, var(--accent), transparent); border-radius: 3px; }
+
+/* --- ENHANCED FEATURED BAR --- */
+#featuredBar {
+  width: 96%; margin: 10px auto 10px; padding: 30px 0;
+  overflow: hidden; display: none;
+  background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 0 25px 2px rgba(255, 255, 255, 0.15), 0 10px 30px rgba(0,0,0,0.6);
+  position: relative; cursor: grab; user-select: none;
+}
+#featuredBar:active { cursor: grabbing; }
+
+#featuredTrack { display: flex; gap: 18px; padding: 0 25px; width: max-content; will-change: transform; }
+
+.featuredItem img { 
+  width: 145px; height: 205px; object-fit: cover; border-radius: 4px; 
+  transition: transform 0.3s; box-shadow: 0 8px 20px rgba(0,0,0,0.8);
+  border: 1px solid rgba(255,255,255,0.1); pointer-events: none;
+}
+.featuredItem:hover img { transform: scale(1.05); }
+
+.premium-divider {
+  width: 96%; height: 4px; margin: 0 auto 25px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  border-radius: 10px; box-shadow: 0 4px 15px rgba(255, 42, 42, 0.5);
+  display: none; 
+}
+
+#mangaList{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:20px;padding:25px;}
+
+.manga { 
+  position: relative; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
+  cursor: pointer; animation: mangaSlideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; z-index: 1;
+}
+.manga:hover, .manga:active { transform: translateY(-12px) scale(1.08); z-index: 10; }
+.manga::before {
+  content: ''; position: absolute; inset: 0; background: var(--flare);
+  filter: blur(25px); border-radius: 12px; opacity: 0; transition: opacity 0.4s ease; z-index: -1;
+}
+.manga:hover::before, .manga:active::before { opacity: 1; }
+.manga img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:10px; box-shadow: 0 8px 15px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; background: #1a1a1a;}
+.manga p{text-align:center;font-size:14px;font-weight:600;margin-top:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; opacity: 0.9;}
+
+#detailPage{display:none; padding: 0; width: 100%; background: #000;}
+.detailHeader { padding: 20px 15px; background: var(--bg); }
+.backBtn{background:var(--card);color:white;padding:12px 20px;margin-bottom:20px;border-radius:30px;cursor:pointer;border:1px solid rgba(255,255,255,0.1); font-weight: bold; transition: 0.3s; display: inline-block;}
+#chapterList { width: 100%; }
+.chapter-title-tag { margin:30px 0 15px; color:red; padding-left:15px; border-left:4px solid red; font-size: 20px; }
+#chapterList img{ width:100vw; display:block; margin: 0 auto 2px; border: none; background: #111; min-height: 250px; object-fit: contain; }
+
+#adminSidebar{ position:fixed;top:0;right:-320px;width:320px;height:100%; background:rgba(15,15,15,0.95); backdrop-filter: blur(20px); padding:25px; transition: 0.5s cubic-bezier(0.85, 0, 0.15, 1); z-index:2500; overflow-y:auto; box-shadow: -10px 0 30px rgba(0,0,0,0.8); }
 #adminSidebar.show{right:0}
-#adminSidebar input,#adminSidebar button,#adminSidebar select{ width:100%;margin:6px 0 12px;padding:12px;background:#222;color:white;border:none;border-radius:6px; }
-#adminBack{position:sticky;bottom:0;padding:10px;background:#1a1a1a;text-align:center;cursor:pointer}
-.upload-zone { border: 2px dashed #444; padding: 20px; text-align: center; border-radius: 8px; margin: 10px 0; background: #1a1a1a; color: #888; cursor: pointer; transition: .3s; }
-.upload-zone:active { border-color: var(--accent); background: #222; }
-.upload-zone b { color: var(--accent); display: block; margin-bottom: 5px; }
-#previewGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; margin-bottom: 15px; }
-.pre-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 4px; border: 1px solid #333; }
-#mangaList{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:15px;padding:20px}
-.manga img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:6px}
-.manga p{text-align:center;font-size:13px;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#detailPage{display:none;padding:15px}
-.backBtn{background:#333;color:white;padding:8px;margin-bottom:15px;border-radius:4px;cursor:pointer;border:none}
-#chapterList img{width:100%;display:block;margin-bottom:2px}
-#uploadStatus{position:fixed;bottom:20px;right:20px;padding:7px 14px;font-size:13px;border-radius:6px;background:#111;opacity:0;transition:.3s;z-index:4000}
-#uploadStatus.show{opacity:1}
-#uploadStatus.success{border:1px solid #0f0;color:#0f0}
-#uploadStatus.fail{border:1px solid #f00;color:#f00}
-#historyList{max-height:200px;overflow-y:auto}
-.historyItem{display:flex;align-items:center;gap:10px;padding:6px;margin-bottom:6px;background:#1a1a1a;border-radius:6px}
-.historyItem img{width:45px;height:60px;object-fit:cover;border-radius:4px}
-.historyInfo{flex:1;font-size:12px;overflow:hidden}
+#adminSidebar input,#adminSidebar button,#adminSidebar select{ width:100%;margin:8px 0 15px;padding:14px;background:rgba(255,255,255,0.05);color:white;border:1px solid rgba(255,255,255,0.1);border-radius:10px; outline: none; }
+
+#uploadStatus{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);padding:12px 25px;border-radius:50px;background:rgba(0,0,0,0.8);backdrop-filter:blur(10px);opacity:0;transition:.4s;z-index:4000; pointer-events: none; border: 1px solid rgba(255,255,255,0.1); font-weight: bold; text-align: center; min-width: 200px;}
+#uploadStatus.show{opacity:1; bottom: 50px;}
+
+/* --- UPDATED DATABASE MANAGEMENT STYLES --- */
+.historyItem{display:flex;flex-direction:column; gap:10px; padding:15px; margin-bottom:15px; background:rgba(255,255,255,0.03); border-radius:12px; border: 1px solid rgba(255,255,255,0.05);}
+.manga-header-info { display: flex; align-items: center; gap: 12px; }
+.manga-header-info img { width:45px; height:60px; object-fit:cover; border-radius:6px; border: 1px solid rgba(255,255,255,0.1); }
+.chapter-badge-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+.chapter-chip { 
+  display: flex; align-items: center; gap: 8px; 
+  background: rgba(255,255,255,0.07); padding: 5px 10px; 
+  border-radius: 6px; font-size: 11px; color: #ccc;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.del-btn { 
+  width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+  background: rgba(255,0,0,0.1); color: #ff4444; border-radius: 5px; cursor: pointer;
+  transition: 0.2s;
+}
+.del-btn:hover { background: #ff0000; color: white; }
+.manga-del-btn { margin-left: auto; color: #ff4444; cursor: pointer; padding: 5px; }
+
 </style>
 </head>
 
@@ -72,75 +222,80 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
 <div id="intro">
   <div id="introBg"></div>
   <h1>Tomato Manga Zone</h1>
-  <p>Manga Online Read</p>
-  <button onclick="enterSite()">ENTER</button>
+  <p>Ultimate Reading Experience</p>
+  <button onclick="enterSite()">START READING</button>
 </div>
 
-<div id="mainHeader" style="display:none">
-  <div id="headerInner">
-    <div id="headerLeft"><div class="searchWrap">🔍 <input placeholder="Search..."></div></div>
-    <div id="headerCenter">
-      <span class="logo-top">Tomato</span>
-      <span class="logo-bottom">Manga Zone</span>
+<div id="mainContentWrapper">
+    <div id="mainHeader">
+      <div id="headerInner">
+        
+        <div id="searchContainer">
+          <input type="text" placeholder="Explore your manga..." id="searchInput">
+          <span class="searchClose" onclick="toggleSearch(false)">✕</span>
+        </div>
+
+        <div class="iconBtn" id="openSearchBtn" onclick="toggleSearch(true)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </div>
+
+        <div id="headerCenter">
+          <span class="logo-main"><span class="t-red">TOMATO</span> MANGA</span>
+          <span class="logo-sub">ZONE</span>
+        </div>
+
+        <div id="headerRight">
+          <div class="iconBtn" id="themeBtn">
+            <svg id="sunIcon" style="display:none;" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
+            <svg id="moonIcon" viewBox="0 0 24 24"><path d="M12.1 22c4.8 0 8.7-3.6 9-8.3-.5.4-1.1.7-1.7.9-1.2.4-2.4.5-3.6.2-3.1-.7-5.4-3.5-5.3-6.7.1-1.7.7-3.2 1.6-4.5-5.2-.4-9.6 3.7-9.6 8.9 0 5.2 4.3 9.5 9.6 9.5z"/></svg>
+          </div>
+          <div class="iconBtn" onclick="toggleAdmin()">
+            <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+          </div>
+        </div>
+      </div>
     </div>
-    <div id="headerRight">
-      <div class="iconBtn" id="themeBtn">🌙</div>
-      <div class="iconBtn" onclick="toggleAdmin()">☰</div>
-    </div>
-  </div>
-  <div id="headerLine"></div>
+    <div id="showcase"><div id="showcaseTrack"></div></div>
+    <div id="popularTitleBar"><span class="pop-text">🔥 Popular Now</span><div class="pop-line"></div></div>
+    <div id="featuredBar"><div id="featuredTrack"></div></div>
+    <div id="premDivider" class="premium-divider"></div>
+    <div id="mangaList"></div>
 </div>
-
-<div id="showcase"><div id="showcaseTrack"></div></div>
-
-<div id="popularTitleBar">
-  <span class="pop-text">Popular Manga</span>
-  <div class="pop-line"></div>
-</div>
-
-<div id="featuredBar"><div id="featuredTrack"></div></div>
 
 <div id="adminSidebar">
   <div id="loginBox">
-    <label>Admin Password</label>
-    <input type="password" id="adminPass">
-    <button onclick="checkPass()">Login</button>
+    <label style="opacity:0.6; font-size:12px;">SECURITY CHECK</label>
+    <input type="password" id="adminPass" placeholder="Enter Admin Key">
+    <button onclick="checkPass()" style="background:var(--accent)">ACCESS CONTROL</button>
   </div>
-
   <div id="adminForm" style="display:none">
-    <h3 style="color: #0f0;">Step 1: Create Manga</h3>
+    <h3 style="color: #0f0; margin-bottom:15px;">Step 1: New Manga</h3>
     <input id="mangaTitle" placeholder="Manga Title">
-    <label>Cover Image</label>
     <input type="file" id="mangaImg" accept="image/*">
-    <button onclick="uploadManga()" id="createBtn" style="background: #2255ff;">Create Manga</button>
-
-    <hr style="margin: 20px 0; border: 0.5px solid #333;">
-
-    <h3 style="color: #ff9900;">Step 2: Add Chapter</h3>
+    <button onclick="uploadManga()" id="createBtn" style="background: #2255ff;">CREATE ENTRY</button>
+    <hr style="margin: 25px 0; border: 0; border-top: 1px solid rgba(255,255,255,0.1);">
+    <h3 style="color: #ff9900; margin-bottom:15px;">Step 2: Add Content</h3>
     <select id="mangaSelect"></select>
-    <input id="chapterTitle" placeholder="Chapter Title (e.g. Ch 01)">
-    
-    <div class="upload-zone" onclick="document.getElementById('chapterFiles').click()">
-      <b>📁 SELECT MULTIPLE IMAGES</b>
-      <span id="fileStatus">Cloud Storage Integration (ImgBB)</span>
-    </div>
+    <input id="chapterTitle" placeholder="Chapter Name">
     <input type="file" id="chapterFiles" accept="image/*" multiple onchange="handleFiles(this.files)" style="display:none">
+    <button onclick="document.getElementById('chapterFiles').click()" style="background:#333">SELECT PAGES</button>
+    <p id="fileStatus" style="font-size:11px; text-align:center; margin-bottom:10px; opacity:0.5;">No files selected</p>
+    <button onclick="uploadChapter()" id="uploadBtn" style="background: var(--accent);">PUBLISH CHAPTER</button>
     
-    <div id="previewGrid"></div>
-
-    <button onclick="uploadChapter()" id="uploadBtn" style="background: #ff2a2a;">Upload Chapter</button>
-
-    <h3>Manage</h3>
+    <h3 style="margin: 25px 0 15px; display: flex; align-items: center; gap: 8px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
+      Database Management
+    </h3>
     <div id="historyList"></div>
   </div>
-  <div id="adminBack" onclick="toggleAdmin()">← Back</div>
+  <div id="adminBack" onclick="toggleAdmin()" style="margin-top:20px; opacity:0.5; font-size:13px;">← CLOSE PANEL</div>
 </div>
 
-<div id="mangaList"></div>
-
 <div id="detailPage">
-  <button class="backBtn" onclick="closeDetail()">← Back</button>
-  <h2 id="detailName" style="margin-bottom:10px;"></h2>
+  <div class="detailHeader">
+    <button class="backBtn" onclick="closeDetail()">← BACK TO LOBBY</button>
+    <h2 id="detailName" style="margin:0; font-size:24px; letter-spacing:1px;"></h2>
+  </div>
   <div id="chapterList"></div>
 </div>
 
@@ -150,9 +305,7 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  // ၁။ IMGBB CONFIGURATION (ကြားခံ Cloud)
   const IMGBB_API_KEY = "1514f8313ed6947ee69bcdec03b70517";
-
   const firebaseConfig = {
     apiKey: "AIzaSyBBr71Dk5pFn8UkIn5DOoBYeQWPvFcKX4", 
     authDomain: "tomato-manga-zone.firebaseapp.com",
@@ -165,123 +318,118 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
-
   window.mangas = [];
+
+  const list = document.getElementById('mangaList');
+  list.innerHTML = Array(8).fill(0).map(() => `<div class="skeleton" style="width:100%; aspect-ratio:3/4;"></div>`).join('');
   
-  // ၂။ Cloud Upload Function (ImgBB ဆီ ပို့ပြီး Link ပြန်တောင်းသည်)
   async function uploadToCloud(file) {
       let formData = new FormData();
       formData.append("image", file);
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-          method: "POST",
-          body: formData
-      });
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData });
       const data = await res.json();
-      if(!data.success) throw new Error("Cloud Upload Failed");
-      return data.data.url; // ပုံရဲ့ Link (စာသား) ကို ပြန်ပေးသည်
+      if(!data.success) throw new Error("Fail");
+      return data.data.url;
   }
 
-  // Intro background logic
   const introBg = document.getElementById('introBg');
   for(let i=0;i<42;i++){
-    introBg.innerHTML+=`<svg viewBox="0 0 160 220"><rect width="160" height="220" fill="#222"/><rect x="10" y="10" width="140" height="60" fill="#000"/><rect x="10" y="80" width="60" height="50" fill="#000"/><rect x="80" y="80" width="70" height="120" fill="#000"/></svg>`;
+    introBg.innerHTML+=`<svg viewBox="0 0 160 220"><rect width="160" height="220" fill="#111"/><rect x="10" y="10" width="140" height="60" fill="#000"/><rect x="10" y="80" width="60" height="50" fill="#000"/><rect x="80" y="80" width="70" height="120" fill="#000"/></svg>`;
   }
 
-  window.handleFiles = function(files) {
-    const status = document.getElementById('fileStatus');
-    status.innerText = files.length + " images selected. Ready to upload.";
-  }
+  window.handleFiles = function(files) { document.getElementById('fileStatus').innerText = files.length + " pages ready."; }
 
   onSnapshot(collection(db, "mangas"), (snapshot) => {
     window.mangas = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
     renderPublic(); renderFeatured(); renderShowcase(); renderHistory(); updateMangaSelect();
   });
 
-  // ၃။ Manga အသစ်တင်ခြင်း (Cover ကို Cloud တင်မည်)
   window.uploadManga = async function() {
     const title = document.getElementById('mangaTitle').value;
     const imgInput = document.getElementById('mangaImg');
     const btn = document.getElementById('createBtn');
-
-    if(!title || !imgInput.files[0]) {
-      showStatus("Title & Cover required","fail"); return;
-    }
-
-    btn.disabled = true;
-    showStatus("Uploading Cover to ImgBB...", "success");
-    
+    if(!title || !imgInput.files[0]) return showStatus("Required fields empty","fail");
+    btn.disabled = true; showStatus("Uploading...", "success");
     try {
       const imageUrl = await uploadToCloud(imgInput.files[0]);
-      await addDoc(collection(db, "mangas"), {
-        id: Date.now(),
-        name: title,
-        img: imageUrl, // Link (စာသား) ကိုပဲ Firebase ထဲ သိမ်းမည်
-        chapters: []
-      });
-      document.getElementById('mangaTitle').value = "";
-      imgInput.value = "";
-      showStatus("Manga Created! ✨","success");
-    } catch(e) { 
-      showStatus("Cloud Error! Check Internet.","fail"); 
-    }
+      await addDoc(collection(db, "mangas"), { id: Date.now(), name: title, img: imageUrl, chapters: [] });
+      document.getElementById('mangaTitle').value = ""; imgInput.value = "";
+      showStatus("Success! ✨","success");
+    } catch(e) { showStatus("Cloud Error","fail"); }
     btn.disabled = false;
   }
 
-  // ၄။ Chapter တင်ခြင်း (ပုံအားလုံးကို Cloud တင်မည်)
   window.uploadChapter = async function() {
     const selectedFbId = document.getElementById('mangaSelect').value;
     const cTitle = document.getElementById('chapterTitle').value;
     const files = document.getElementById('chapterFiles').files;
     const btn = document.getElementById('uploadBtn');
-
-    if(!selectedFbId || !cTitle || files.length === 0){
-      showStatus("Data missing","fail"); return;
-    }
-
-    btn.disabled = true;
-    showStatus(`Uploading ${files.length} pages to Cloud...`, "success");
-
+    if(!selectedFbId || !cTitle || files.length === 0) return showStatus("Missing info","fail");
+    btn.disabled = true; showStatus(`Syncing ${files.length} pages...`, "success");
     try {
       let cloudUrls = [];
-      for(let file of files) {
-          const url = await uploadToCloud(file); // တစ်ပုံချင်းစီ Cloud တင်
-          cloudUrls.push(url);
-      }
-
+      for(let file of files) { cloudUrls.push(await uploadToCloud(file)); }
       const targetManga = window.mangas.find(m => m.fbId === selectedFbId);
       const updatedChapters = [...(targetManga.chapters || []), { title: cTitle, pages: cloudUrls }];
-      
-      await updateDoc(doc(db, "mangas", selectedFbId), {
-        chapters: updatedChapters
-      });
-
-      document.getElementById('chapterTitle').value = "";
-      document.getElementById('fileStatus').innerText = "Cloud Storage Integration (ImgBB)";
-      showStatus("Chapter Uploaded! 🎉","success");
-    } catch(e) { showStatus("Upload Failed!","fail"); }
+      await updateDoc(doc(db, "mangas", selectedFbId), { chapters: updatedChapters });
+      document.getElementById('chapterTitle').value = ""; document.getElementById('fileStatus').innerText = "No files selected";
+      showStatus("Published! 🎉","success");
+    } catch(e) { showStatus("Failed","fail"); }
     btn.disabled = false;
   }
 
+  /* --- UPDATED DELETE FUNCTIONS --- */
   window.deleteManga = async function(fbId) {
-    if(confirm("Confirm delete from Database?")) {
+    if(confirm("Delete this Manga entirely?")) {
+      try { await deleteDoc(doc(db, "mangas", fbId)); showStatus("Manga Removed","success"); }
+      catch(e) { showStatus("Error","fail"); }
+    }
+  }
+
+  window.deleteChapter = async function(mangaFbId, chapterIndex) {
+    if(confirm("Delete this specific chapter?")) {
       try {
-        await deleteDoc(doc(db, "mangas", fbId));
-        showStatus("Deleted","success");
-      } catch(e) { showStatus("Error deleting","fail"); }
+        const manga = window.mangas.find(m => m.fbId === mangaFbId);
+        const updatedChapters = manga.chapters.filter((_, index) => index !== chapterIndex);
+        await updateDoc(doc(db, "mangas", mangaFbId), { chapters: updatedChapters });
+        showStatus("Chapter Deleted","success");
+      } catch(e) { showStatus("Error","fail"); }
     }
   }
 
   window.enterSite = () => {
-    document.getElementById('intro').classList.add("fade-out");
-    setTimeout(() => { 
-      document.getElementById('intro').style.display="none"; 
-      document.getElementById('mainHeader').style.display="block"; 
-    }, 600);
+    const intro = document.getElementById('intro');
+    const lobby = document.getElementById('mainContentWrapper');
+    intro.classList.add("fade-out");
+    setTimeout(() => { intro.style.display="none"; lobby.classList.add("animate-in"); }, 800);
   }
 
-  document.getElementById('themeBtn').onclick = () => {
-    document.body.classList.toggle("light");
-    document.getElementById('themeBtn').innerText = document.body.classList.contains("light") ? "🌞" : "🌙";
+  window.toggleSearch = (show) => {
+    const container = document.getElementById('searchContainer');
+    const logo = document.getElementById('headerCenter');
+    if(show) {
+      container.classList.add('active');
+      logo.classList.add('hide');
+      document.getElementById('searchInput').focus();
+    } else {
+      container.classList.remove('active');
+      logo.classList.remove('hide');
+      document.getElementById('searchInput').value = "";
+    }
+  }
+
+  document.getElementById('themeBtn').onclick = function() {
+    const sun = document.getElementById('sunIcon');
+    const moon = document.getElementById('moonIcon');
+    const iconWrapper = this.querySelector('svg:not([style*="display:none"])');
+    iconWrapper.classList.add('rotate-anim');
+    setTimeout(() => {
+        document.body.classList.toggle("light");
+        const isLight = document.body.classList.contains("light");
+        sun.style.display = isLight ? "block" : "none";
+        moon.style.display = isLight ? "none" : "block";
+        iconWrapper.classList.remove('rotate-anim');
+    }, 300);
   }
 
   window.toggleAdmin = () => document.getElementById('adminSidebar').classList.toggle("show");
@@ -290,8 +438,8 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
     if(document.getElementById('adminPass').value === "Tomatochitsanmg03"){
       document.getElementById('loginBox').style.display="none"; 
       document.getElementById('adminForm').style.display="block";
-      showStatus("Welcome Admin","success");
-    } else showStatus("Access Denied","fail");
+      showStatus("Access Granted","success");
+    } else showStatus("Wrong Key","fail");
   }
 
   function showStatus(t,type){
@@ -305,52 +453,112 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
   }
 
   function renderPublic(){
-    document.getElementById('mangaList').innerHTML = window.mangas.map(m => `
-      <div class="manga" onclick="openManga('${m.fbId}')">
-        <img src="${m.img}">
+    if(window.mangas.length === 0) return;
+    document.getElementById('mangaList').innerHTML = window.mangas.map((m, i) => `
+      <div class="manga" onclick="openManga('${m.fbId}')" style="animation-delay: ${0.8 + (i * 0.05)}s">
+        <img src="${m.img}" loading="lazy" decoding="async" fetchpriority="low">
         <p>${m.name}</p>
       </div>`).join('');
   }
 
+  let isDown = false, startX, scrollLeft, animationId, currentPos = 0;
+  const scrollSpeed = 0.5;
+
   function renderFeatured(){
-    const bar = document.getElementById('featuredBar');
-    const title = document.getElementById('popularTitleBar');
-    if(window.mangas.length > 0) { bar.style.display="block"; title.style.display="flex"; }
-    else { bar.style.display="none"; title.style.display="none"; }
-    document.getElementById('featuredTrack').innerHTML = window.mangas.map(m => `<div class="featuredItem" onclick="openManga('${m.fbId}')"><img src="${m.img}"></div>`).join('');
+    const bar = document.getElementById('featuredBar'), track = document.getElementById('featuredTrack'), title = document.getElementById('popularTitleBar'), divider = document.getElementById('premDivider');
+    if(window.mangas.length > 0) { 
+      bar.style.display="block"; title.style.display="flex"; divider.style.display="block";
+      const itemsHtml = window.mangas.map(m => `<div class="featuredItem" onclick="openManga('${m.fbId}')"><img src="${m.img}" loading="lazy"></div>`).join('');
+      track.innerHTML = itemsHtml + itemsHtml + itemsHtml; 
+      startAutoScroll();
+      initDragEvents(bar, track);
+    } else {
+      bar.style.display="none"; title.style.none="flex"; divider.style.display="none";
+    }
+  }
+
+  function startAutoScroll() {
+    cancelAnimationFrame(animationId);
+    const track = document.getElementById('featuredTrack');
+    function step() {
+      if (!isDown) {
+        currentPos -= scrollSpeed;
+        const singleSetWidth = track.scrollWidth / 3;
+        if (Math.abs(currentPos) >= singleSetWidth) currentPos = 0;
+        track.style.transform = `translateX(${currentPos}px)`;
+      }
+      animationId = requestAnimationFrame(step);
+    }
+    animationId = requestAnimationFrame(step);
+  }
+
+  function initDragEvents(bar, track) {
+    const handleStart = (e) => { isDown = true; startX = (e.pageX || e.touches[0].pageX) - currentPos; };
+    const handleEnd = () => { isDown = false; };
+    const handleMove = (e) => {
+      if (!isDown) return;
+      const x = (e.pageX || e.touches[0].pageX);
+      currentPos = x - startX;
+      const singleSetWidth = track.scrollWidth / 3;
+      if (currentPos > 0) currentPos = -singleSetWidth;
+      if (Math.abs(currentPos) >= singleSetWidth * 2) currentPos = -singleSetWidth;
+      track.style.transform = `translateX(${currentPos}px)`;
+    };
+    bar.addEventListener('mousedown', handleStart); bar.addEventListener('touchstart', handleStart);
+    window.addEventListener('mouseup', handleEnd); window.addEventListener('touchend', handleEnd);
+    bar.addEventListener('mousemove', handleMove); bar.addEventListener('touchmove', handleMove);
   }
 
   function renderShowcase(){
     const sc = document.getElementById('showcase');
-    if(window.mangas.length > 0) sc.style.display="block";
-    else sc.style.display="none";
-    document.getElementById('showcaseTrack').innerHTML = window.mangas.map(m => `<div class="showcaseItem"><img src="${m.img}"></div>`).join('');
+    if(window.mangas.length > 0) sc.style.display="block"; else sc.style.display="none";
+    document.getElementById('showcaseTrack').innerHTML = window.mangas.map(m => `<div class="showcaseItem"><img src="${m.img}" fetchpriority="high" decoding="sync"></div>`).join('');
+    if(window.showcaseTimer) clearInterval(window.showcaseTimer);
+    let index = 0;
+    window.showcaseTimer = setInterval(() => {
+      index = (index + 1) % window.mangas.length;
+      if(document.getElementById('showcaseTrack')) document.getElementById('showcaseTrack').style.transform = `translateX(-${index * 100}%)`;
+    }, 5000);
   }
 
+  /* --- RENDER UPDATED HISTORY (DATABASE MANAGEMENT) --- */
   function renderHistory(){
     document.getElementById('historyList').innerHTML = window.mangas.map(m => `
       <div class="historyItem">
-        <img src="${m.img}">
-        <div class="historyInfo"><b>${m.name}</b><br>${(m.chapters || []).length} Chaps</div>
-        <div style="color:red; cursor:pointer;" onclick="deleteManga('${m.fbId}')">🗑️</div>
+        <div class="manga-header-info">
+          <img src="${m.img}" loading="lazy">
+          <div class="historyInfo">
+            <b style="font-size:14px;">${m.name}</b>
+          </div>
+          <div class="manga-del-btn" onclick="deleteManga('${m.fbId}')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          </div>
+        </div>
+        <div class="chapter-badge-container">
+          ${(m.chapters || []).map((ch, idx) => `
+            <div class="chapter-chip">
+              <span>${ch.title}</span>
+              <div class="del-btn" onclick="deleteChapter('${m.fbId}', ${idx})">✕</div>
+            </div>
+          `).join('')}
+          ${(!m.chapters || m.chapters.length === 0) ? '<span style="font-size:10px; opacity:0.4;">No chapters yet</span>' : ''}
+        </div>
       </div>`).join('');
   }
 
   window.openManga = function(fbId){
+    if (isDown) return;
     const m = window.mangas.find(x => x.fbId === fbId);
-    document.getElementById('mangaList').style.display = "none"; 
-    document.getElementById('showcase').style.display = "none"; 
-    document.getElementById('featuredBar').style.display = "none";
-    document.getElementById('popularTitleBar').style.display = "none";
-    document.getElementById('detailPage').style.display = "block";
+    document.getElementById('mainContentWrapper').style.display = "none"; 
+    const detail = document.getElementById('detailPage');
+    detail.style.display = "block";
     document.getElementById('detailName').innerText = m.name;
-    
     let html = "";
-    if(!m.chapters || m.chapters.length === 0) html = "<p style='text-align:center; opacity:0.5;'>No Chapters Yet</p>";
+    if(!m.chapters || m.chapters.length === 0) html = "<p style='text-align:center; opacity:0.3; padding:100px;'>CONTENT COMING SOON</p>";
     else {
       m.chapters.forEach(ch => {
-        html += `<h3 style="margin:20px 0 10px; color:red; padding-left:10px;">${ch.title}</h3>`;
-        ch.pages.forEach(p => { html += `<img src="${p}" style="width:100%; display:block; margin-bottom:2px;">`; });
+        html += `<h3 class="chapter-title-tag">${ch.title}</h3>`;
+        ch.pages.forEach(p => { html += `<img src="${p}" loading="lazy" decoding="async" fetchpriority="low">`; });
       });
     }
     document.getElementById('chapterList').innerHTML = html;
@@ -359,12 +567,8 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
 
   window.closeDetail = function(){
     document.getElementById('detailPage').style.display = "none"; 
-    document.getElementById('mangaList').style.display = "grid";
-    if(window.mangas.length > 0){ 
-      document.getElementById('showcase').style.display="block"; 
-      document.getElementById('featuredBar').style.display="block"; 
-      document.getElementById('popularTitleBar').style.display="flex"; 
-    }
+    document.getElementById('mainContentWrapper').style.display = "block";
+    window.scrollTo(0,0);
   }
 </script>
 </body>

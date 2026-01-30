@@ -6,7 +6,7 @@
 <title>Tomato Manga Zone</title>
 
 <style>
-/* CSS styles as per original design */
+/* CSS styles - Original Design Maintained */
 *{margin:0;padding:0;box-sizing:border-box}
 :root{ --bg:#000; --text:#fff; --card:#111; --accent:#ff2a2a; }
 body.light{ --bg:#fff; --text:#000; --card:#f2f2f2; --accent:#ff2a2a; }
@@ -150,14 +150,14 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  // Fixed Config using Tomato Web data from
+  // FIXED CONFIG - API KEY CORRECTED (O instead of 0)
   const firebaseConfig = {
-    apiKey: "AIzaSyBBr71Dk5pFn8UkIn5D0oBYeQWPvFcKX4", 
+    apiKey: "AIzaSyBBr71Dk5pFn8UkIn5DOoBYeQWPvFcKX4", 
     authDomain: "tomato-manga-zone.firebaseapp.com",
     projectId: "tomato-manga-zone",
     storageBucket: "tomato-manga-zone.firebasestorage.app",
     messagingSenderId: "28164821885",
-    appId: "1:28164821885:web:d23cc3faa8d8dbae22f214", // Matches
+    appId: "1:28164821885:web:d23cc3faa8d8dbae22f214",
     measurementId: "G-BNR7BQP2VC"
   };
 
@@ -167,6 +167,7 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
   window.mangas = [];
   let currentTextPages = [];
 
+  // Intro background logic
   const introBg = document.getElementById('introBg');
   for(let i=0;i<42;i++){
     introBg.innerHTML+=`<svg viewBox="0 0 160 220"><rect width="160" height="220" fill="#222"/><rect x="10" y="10" width="140" height="60" fill="#000"/><rect x="10" y="80" width="60" height="50" fill="#000"/><rect x="80" y="80" width="70" height="120" fill="#000"/></svg>`;
@@ -200,6 +201,7 @@ body.light #mainHeader{background:linear-gradient(180deg,#fff,#eee)}
     btn.disabled = false;
   }
 
+  // Real-time Database Sync
   onSnapshot(collection(db, "mangas"), (snapshot) => {
     window.mangas = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
     renderPublic(); renderFeatured(); renderShowcase(); renderHistory(); updateMangaSelect();

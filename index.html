@@ -117,7 +117,8 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
 #introBg svg{width:160px;height:220px;border-radius:6px}
 @keyframes introMove{ from{transform:translate(0,0)} to{transform:translate(-600px,-500px)} }
 
-#mainContentWrapper { display: none; opacity: 0; }
+/* --- REFRESH FIX: Changed display to block for persistent state --- */
+#mainContentWrapper { display: block; opacity: 0; }
 #mainContentWrapper.animate-in { display: block; animation: lobbyEntrance 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
 #mainHeader { 
@@ -678,7 +679,7 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
   const lobbyScrollMemory = {};
 
   window.navigateTo = function(targetId) {
-    // Persistent Storage: Save current active lobby ID
+    // --- [ REFRESH FIX: Persistent Storage: Save current active lobby ID ] ---
     localStorage.setItem('activeLobbyId', targetId);
 
     const allLobbies = document.querySelectorAll('.app-lobby');
@@ -759,30 +760,36 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
     window.mangas = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
     renderPublic(); renderFeatured(); renderShowcase(); renderHistory(); updateMangaSelect(); renderBookmarks();
     
-      // --- [ RECOVERY LOGIC FIXED ] ---
+    // --- [ MULTI-LOBBY REFRESH RECOVERY FIXED ] ---
     const savedLobby = localStorage.getItem('activeLobbyId');
     const savedMangaFbId = localStorage.getItem('currentOpenMangaFbId');
     const savedChapterIdx = localStorage.getItem('currentReadChapterIdx');
 
-    if(savedLobby && savedLobby !== 'intro') {
-        // Intro Screen ကို အတင်းဖျောက်ခိုင်းတာပါ
+    if (savedLobby && savedLobby !== 'intro') {
+        // ၁။ Intro ကို အပြီးဖျောက်ပစ်မယ်
         document.getElementById('intro').style.display = "none";
         
-        // ပျောက်နေတဲ့ Main Content ကို အတင်းပြန်ဖော်ခိုင်းတာပါ
-        const main = document.getElementById('mainContentWrapper');
-        main.style.display = "block";
-        main.style.opacity = "1";
+        // ၂။ ပင်မ Content ကြီးကို ပေါ်အောင် အရင်လုပ်မယ်
+        const mainApp = document.getElementById('mainContentWrapper');
+        mainApp.style.display = "block";
+        mainApp.style.opacity = "1";
 
+        // ၃။ သက်ဆိုင်ရာ Lobby အသီးသီးကို ပြန်ပို့မယ်
         if (savedLobby === 'readingLobby' && savedMangaFbId && savedChapterIdx !== null) {
             window.currentOpenMangaFbId = savedMangaFbId;
             openReadingLobby(savedMangaFbId, parseInt(savedChapterIdx));
-        } else if (savedLobby === 'detailPage' && savedMangaFbId) {
+        } 
+        else if (savedLobby === 'detailPage' && savedMangaFbId) {
             openManga(savedMangaFbId);
-        } else {
+        } 
+        else if (savedLobby === 'bookmarkPage') {
+            openBookmarkLobby();
+        }
+        else {
+            // Main Lobby ဆိုရင် Main ကိုပဲ ပြန်ပြမယ်
             navigateTo(savedLobby);
         }
     }
-
 
     if(document.getElementById('detailPage').style.display === "block" && window.currentOpenMangaFbId) {
         openManga(window.currentOpenMangaFbId);

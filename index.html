@@ -528,7 +528,7 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
   <button onclick="enterSite()">START READING</button>
 </div>
 
-<div id="mainContentWrapper">
+<div id="mainContentWrapper" class="app-lobby">
     <div id="mainHeader">
       <div id="headerInner">
         <div id="searchContainer">
@@ -593,7 +593,7 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
   <div id="adminBack" onclick="toggleAdmin()" style="margin-top:20px; opacity:0.5; font-size:13px;">← CLOSE PANEL</div>
 </div>
 
-<div id="bookmarkPage">
+<div id="bookmarkPage" class="app-lobby">
   <div class="bookmark-header">
     <button class="backBtn" onclick="closeBookmarkLobby()" style="margin:0">← BACK</button>
     <h2 style="font-weight: 900; letter-spacing: 1px;">MY BOOKMARK LIST</h2>
@@ -601,7 +601,7 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
   <div id="bookmarkList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:20px;"></div>
 </div>
 
-<div id="detailPage">
+<div id="detailPage" class="app-lobby">
   <button class="backBtn" onclick="closeDetail()">← BACK</button>
   <div class="lobby-container" id="lobbyInfo"></div>
   
@@ -616,7 +616,7 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
   </div>
 </div>
 
-<div id="readingLobby">
+<div id="readingLobby" class="app-lobby">
     <div class="reading-header">
         <div onclick="closeReadingLobby()" style="cursor:pointer; font-weight:900;">← BACK</div>
         <div id="readingTitle" onclick="toggleChapterPopup()" style="font-weight:bold; cursor:pointer;">Chapter Name ▾</div>
@@ -673,6 +673,38 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
   
   // Flag to control slide up animation (Only on startup)
   let shouldAnimateMangas = true;
+
+  // --- [ UNIVERSAL LOBBY & SCROLL SYSTEM ] ---
+  const lobbyScrollMemory = {};
+
+  window.navigateTo = function(targetId) {
+    const allLobbies = document.querySelectorAll('.app-lobby');
+    const currentScroll = window.scrollY;
+
+    allLobbies.forEach(lobby => {
+      // Save current scroll and hide
+      if (getComputedStyle(lobby).display === 'block') {
+        lobbyScrollMemory[lobby.id] = currentScroll;
+        lobby.style.display = 'none';
+      }
+    });
+
+    const target = document.getElementById(targetId);
+    if (target) {
+      target.style.display = 'block';
+      const savedPos = lobbyScrollMemory[targetId] || 0;
+      
+      // Handle special flags for animations
+      if(targetId === 'mainContentWrapper') shouldAnimateMangas = false;
+
+      setTimeout(() => {
+        window.scrollTo({
+          top: savedPos,
+          behavior: 'instant'
+        });
+      }, 40);
+    }
+  };
 
   const genreOptions = ["Action", "Adventure", "Comedy", "Drama", "Fantasy", "Horror", "Mystery", "Romance", "Sci-Fi", "Slice of Life", "Sports", "Supernatural", "Thriller", "Seinen", "Shounen"];
   const adminGenreDiv = document.getElementById('adminGenreList');
@@ -789,10 +821,8 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
     setTimeout(() => { 
         intro.style.display="none"; 
         lobby.classList.add("animate-in"); 
-        // Allow animation on first load
         shouldAnimateMangas = true;
         renderPublic();
-        // After initial render, disable future slide animations until full refresh
         setTimeout(() => { shouldAnimateMangas = false; }, 2000);
     }, 800);
   }
@@ -836,7 +866,6 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
   function renderPublic(){
     if(window.mangas.length === 0) return;
     document.getElementById('mangaList').innerHTML = window.mangas.map((m, i) => {
-      // Add 'animate' class only if it's the first time landing in Main Lobby
       const animClass = shouldAnimateMangas ? 'animate' : '';
       const delay = shouldAnimateMangas ? `style="animation-delay: ${0.8 + (i * 0.05)}s"` : '';
       return `
@@ -923,23 +952,19 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
     return readHistory[mangaId] && readHistory[mangaId].includes(chapterIdx);
   }
 
-  // --- [UNIVERSAL SCROLL POSITION SAVE] ---
+  // --- [ UPDATED OPEN MANGA WITH NAVIGATE ] ---
   window.openManga = function(fbId){
     if (isDown) return;
     
-    // Save current scroll position regardless of lobby type
-    sessionStorage.setItem('universal_scroll_pos', window.scrollY);
-    
-    // Remember which lobby was active
+    // Auto-save: Remember if we came from bookmarks or main for back button
     const isInBookmark = document.getElementById('bookmarkPage').style.display === "block";
     sessionStorage.setItem('active_lobby_source', isInBookmark ? 'bookmark' : 'main');
 
     window.currentOpenMangaFbId = fbId;
     const m = window.mangas.find(x => x.fbId === fbId);
     
-    document.getElementById('mainContentWrapper').style.display = "none"; 
-    document.getElementById('bookmarkPage').style.display = "none";
-    document.getElementById('detailPage').style.display = "block";
+    // Use Universal Navigation
+    navigateTo('detailPage');
     
     const genresHtml = (m.genres || ["Action"]).map(g => `<span class="genre-tag">${g}</span>`).join('');
     const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || "[]");
@@ -971,7 +996,6 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
       });
     }
     document.getElementById('chapterItemsContainer').innerHTML = html;
-    window.scrollTo(0,0);
   }
 
   let currentReadMode = 'scroll'; 
@@ -981,19 +1005,15 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
   window.openReadingLobby = async function(fbId, chIdx) {
       const m = window.mangas.find(x => x.fbId === fbId);
       const ch = m.chapters[chIdx];
-      
       await markChapterReadAndCount(fbId, chIdx);
       
-      const lobby = document.getElementById('readingLobby');
+      // Use Universal Navigation
+      navigateTo('readingLobby');
+
       document.getElementById('readingTitle').innerText = ch.title + " ▾";
       totalPages = ch.pages.length;
       currentPageIndex = 0;
       renderPages(ch.pages);
-      
-      lobby.style.display = "block";
-      lobby.classList.remove('lobby-animate-out');
-      lobby.classList.add('lobby-animate-in');
-      lobby.scrollTo(0,0);
       
       let popHtml = m.chapters.map((c, i) => `<div class="chapter-option-item" onclick="openReadingLobby('${fbId}', ${i}); toggleChapterPopup();">${c.title}</div>`).join('');
       document.getElementById('popupChapterList').innerHTML = popHtml;
@@ -1016,18 +1036,13 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
   function renderPages(pages) {
       const container = document.getElementById('pagesContainer');
       container.innerHTML = ''; 
-
       pages.forEach((p, index) => {
           const img = document.createElement('img');
           if (index > 2) img.loading = "lazy";
-          
           img.src = p;
           img.style.opacity = "0"; 
           img.style.transition = "opacity 0.4s ease-in"; 
-          
           img.onload = () => { img.style.opacity = "1"; };
-          img.onerror = () => { img.style.display = 'none'; };
-
           if(currentReadMode === 'scroll') {
               container.appendChild(img);
           } else {
@@ -1037,12 +1052,7 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
               container.appendChild(pageDiv);
           }
       });
-
-      if(currentReadMode === 'scroll') {
-          container.style.transform = `none`;
-      } else {
-          container.style.transform = `translateX(0)`;
-      }
+      container.style.transform = (currentReadMode === 'scroll') ? `none` : `translateX(0)`;
   }
 
   window.setReadMode = function(mode) {
@@ -1109,66 +1119,37 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
   window.toggleChapterPopup = () => { document.getElementById('chapterSelectPopup').classList.toggle('show'); };
   
   window.closeReadingLobby = () => {
-      const lobby = document.getElementById('readingLobby');
-      lobby.classList.remove('lobby-animate-in');
-      lobby.classList.add('lobby-animate-out');
-      setTimeout(() => {
-          lobby.style.display = "none";
-          lobby.classList.remove('lobby-animate-out');
-          if(window.currentOpenMangaFbId) openManga(window.currentOpenMangaFbId);
-      }, 300);
+      // Return to detail page using navigate system
+      navigateTo('detailPage');
   }
 
   window.onclick = () => { document.getElementById('settingsPopup').style.display = 'none'; };
   
-  // --- [UNIVERSAL SCROLL POSITION RESTORE] ---
+  // --- [ UPDATED CLOSE DETAIL WITH NAVIGATE ] ---
   window.closeDetail = () => { 
-    const source = sessionStorage.getItem('active_lobby_source');
-    
-    // Crucial: Set shouldAnimateMangas to false when returning to Lobby
-    shouldAnimateMangas = false;
-    
-    document.getElementById('detailPage').style.display = "none"; 
-    
-    if (source === 'bookmark') {
-        document.getElementById('bookmarkPage').style.display = "block";
-        renderBookmarks();
-    } else {
-        document.getElementById('mainContentWrapper').style.display = "block"; 
-        renderPublic(); // Render again without animation
-    }
-    
-    const savedPos = sessionStorage.getItem('universal_scroll_pos');
-    if (savedPos) {
-        setTimeout(() => {
-            window.scrollTo({
-                top: parseInt(savedPos),
-                behavior: 'instant' 
-            });
-        }, 15);
-    }
+    const source = sessionStorage.getItem('active_lobby_source') || 'main';
+    const target = (source === 'bookmark') ? 'bookmarkPage' : 'mainContentWrapper';
+    navigateTo(target);
+    if(source !== 'bookmark') renderPublic();
   }
 
   window.toggleBookmark = function(fbId) {
     let b = JSON.parse(localStorage.getItem('bookmarks') || "[]");
     if(b.includes(fbId)) { b = b.filter(id => id !== fbId); showStatus("Removed", "fail"); }
     else { b.push(fbId); showStatus("Added! ❤️", "success"); }
-    localStorage.setItem('bookmarks', JSON.stringify(b)); openManga(fbId); renderBookmarks();
+    localStorage.setItem('bookmarks', JSON.stringify(b)); 
+    openManga(fbId); // Refresh UI
+    renderBookmarks();
   }
   
   window.openBookmarkLobby = function() { 
     document.getElementById('adminSidebar').classList.remove('show'); 
-    document.getElementById('mainContentWrapper').style.display = "none"; 
-    document.getElementById('detailPage').style.display = "none"; 
-    document.getElementById('bookmarkPage').style.display = "block"; 
+    navigateTo('bookmarkPage');
     renderBookmarks(); 
-    window.scrollTo(0,0); 
   }
   
   window.closeBookmarkLobby = function() { 
-    document.getElementById('bookmarkPage').style.display = "none"; 
-    document.getElementById('mainContentWrapper').style.display = "block"; 
-    window.scrollTo(0,0);
+    navigateTo('mainContentWrapper');
   }
 
   function renderBookmarks() {

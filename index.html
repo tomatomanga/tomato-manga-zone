@@ -765,31 +765,7 @@ html, body {
     window.mangas = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
     renderPublic(); renderFeatured(); renderShowcase(); renderHistory(); updateMangaSelect(); renderBookmarks();
     
-    const savedLobby = localStorage.getItem('activeLobbyId');
-    const savedMangaFbId = localStorage.getItem('currentOpenMangaFbId');
-    const savedChapterIdx = localStorage.getItem('currentReadChapterIdx');
-
-    if (savedLobby && savedLobby !== 'intro') {
-        document.getElementById('intro').style.display = "none";
-        const mainApp = document.getElementById('mainContentWrapper');
-        mainApp.style.display = "block";
-        mainApp.style.opacity = "1";
-
-        if (savedLobby === 'readingLobby' && savedMangaFbId && savedChapterIdx !== null) {
-            window.currentOpenMangaFbId = savedMangaFbId;
-            openReadingLobby(savedMangaFbId, parseInt(savedChapterIdx));
-        } 
-        else if (savedLobby === 'detailPage' && savedMangaFbId) {
-            openManga(savedMangaFbId);
-        } 
-        else if (savedLobby === 'bookmarkPage') {
-            openBookmarkLobby();
-        }
-        else {
-            navigateTo(savedLobby);
-        }
-    }
-
+    // ပုံမှန်ဆိုရင် ဒီမှာ auto-login ဖြစ်စေမယ့် code တွေ ရှိရမယ်၊ အခုတော့ enterSite နှိပ်မှပဲ ဝင်စေချင်တာမို့လို့ ဖယ်လိုက်ပါပြီ။
     if(document.getElementById('detailPage').style.display === "block" && window.currentOpenMangaFbId) {
         openManga(window.currentOpenMangaFbId);
     }
@@ -852,13 +828,40 @@ html, body {
   window.enterSite = () => {
     const intro = document.getElementById('intro');
     const lobby = document.getElementById('mainContentWrapper');
+
+    // Intro Animation စတင်မယ်
     intro.classList.add("fade-out");
+
     setTimeout(() => { 
-        intro.style.display="none"; 
+        intro.style.display = "none"; 
         lobby.classList.add("animate-in"); 
+
+        // Enter နှိပ်ပြီးမှ Memory ကိုစစ်ပြီး အရင်ရောက်ခဲ့တဲ့ နေရာကိုပြန်ပို့ပေးမယ်
+        const savedLobby = localStorage.getItem('activeLobbyId');
+        const savedMangaFbId = localStorage.getItem('currentOpenMangaFbId');
+        const savedChapterIdx = localStorage.getItem('currentReadChapterIdx');
+
+        if (savedLobby && savedLobby !== 'intro') {
+            if (savedLobby === 'readingLobby' && savedMangaFbId && savedChapterIdx !== null) {
+                window.currentOpenMangaFbId = savedMangaFbId;
+                openReadingLobby(savedMangaFbId, parseInt(savedChapterIdx));
+            } 
+            else if (savedLobby === 'detailPage' && savedMangaFbId) {
+                openManga(savedMangaFbId);
+            } 
+            else if (savedLobby === 'bookmarkPage') {
+                openBookmarkLobby();
+            }
+            else {
+                navigateTo(savedLobby);
+            }
+        } else {
+            // Memory မရှိရင် default အနေနဲ့ Home ကိုပြမယ်
+            navigateTo('mainContentWrapper');
+        }
+
         shouldAnimateMangas = true;
         renderPublic();
-        localStorage.setItem('activeLobbyId', 'mainContentWrapper');
         setTimeout(() => { shouldAnimateMangas = false; }, 2000);
     }, 800);
   }
@@ -1176,3 +1179,4 @@ html, body {
 </script>
 </body>
 </html>
+

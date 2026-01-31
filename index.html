@@ -11,7 +11,7 @@
 :root{ --bg:#000; --text:#fff; --card:#111; --accent:#ff2a2a; --glass: rgba(255, 255, 255, 0.08); --flare: rgba(255, 42, 42, 0.4); }
 body.light{ --bg:#fff; --text:#000; --card:#f2f2f2; --accent:#ff2a2a; --glass: rgba(0, 0, 0, 0.05); --flare: rgba(255, 42, 42, 0.2); }
 
-/* --- REFRESH DISABLE FIX --- */
+/* --- [ REFRESH BLOCKER ADDED HERE ] --- */
 html, body { 
   width:100%; 
   min-height:100%; 
@@ -21,7 +21,7 @@ html, body {
   transition:.35s; 
   scroll-behavior: auto !important; 
   overflow-x: hidden;
-  /* ဒီ code က အပေါ်ကနေအောက်ဆွဲရင် Refresh ဖြစ်တာကို ပိတ်ပေးတာပါ */
+  /* ဒါလေးက Pull-to-refresh ကို ပိတ်ပေးတာပါ */
   overscroll-behavior-y: contain; 
 }
 

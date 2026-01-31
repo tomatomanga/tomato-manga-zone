@@ -6,16 +6,24 @@
 <title>Tomato Manga Zone</title>
 
 <style>
-/* --- REFRESH FIX: Pull-to-refresh ကို ပိတ်ခြင်း --- */
-html, body {
-  overscroll-behavior-y: contain; /* ဒါက အပေါ်ကနေ ဆွဲချရင် refresh ဖြစ်တာကို တားပေးပါတယ် */
-}
-
 /* CSS styles - Premium Animation & Speed Fixes */
 *{margin:0;padding:0;box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
 :root{ --bg:#000; --text:#fff; --card:#111; --accent:#ff2a2a; --glass: rgba(255, 255, 255, 0.08); --flare: rgba(255, 42, 42, 0.4); }
 body.light{ --bg:#fff; --text:#000; --card:#f2f2f2; --accent:#ff2a2a; --glass: rgba(0, 0, 0, 0.05); --flare: rgba(255, 42, 42, 0.2); }
-html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text); font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; transition:.35s; scroll-behavior: auto !important; overflow-x: hidden; }
+
+/* --- REFRESH DISABLE FIX --- */
+html, body { 
+  width:100%; 
+  min-height:100%; 
+  background:var(--bg); 
+  color:var(--text); 
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+  transition:.35s; 
+  scroll-behavior: auto !important; 
+  overflow-x: hidden;
+  /* ဒီ code က အပေါ်ကနေအောက်ဆွဲရင် Refresh ဖြစ်တာကို ပိတ်ပေးတာပါ */
+  overscroll-behavior-y: contain; 
+}
 
 /* Performance Boost */
 #mangaList, #featuredBar, #chapterList, #bookmarkList {

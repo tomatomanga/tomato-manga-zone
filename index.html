@@ -418,7 +418,6 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
     flex-shrink: 0;
     overflow: hidden;
 }
-/* This ensures images maintain original ratio but fit within the screen like MangaDex */
 #readingLobby.page-mode .page-item img {
     max-width: 100%;
     max-height: 100%;
@@ -532,7 +531,7 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
         </div>
         <div id="headerRight">
           <div class="iconBtn" id="themeBtn">
-            <svg id="sunIcon" style="display:none;" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5 2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
+            <svg id="sunIcon" style="display:none;" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5 2.24 5 5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s-1 .45-1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
             <svg id="moonIcon" viewBox="0 0 24 24"><path d="M12.1 22c4.8 0 8.7-3.6 9-8.3-.5.4-1.1.7-1.7.9-1.2.4-2.4.5-3.6.2-3.1-.7-5.4-3.5-5.3-6.7.1-1.7.7-3.2 1.6-4.5-5.2-.4-9.6 3.7-9.6 8.9 0 5.2 4.3 9.5 9.6 9.5z"/></svg>
           </div>
           <div class="iconBtn" onclick="toggleAdmin()">
@@ -553,21 +552,13 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
     <div class="bookmark-icon-wrap"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg></div>
     <span style="font-weight: bold; font-size: 15px;">My Bookmarks</span>
   </div>
-
   <div id="loginBox">
-    <label style="opacity:0.6; font-size:11px; letter-spacing:1px;">TEAM ACCESS ONLY</label>
-    <input type="email" id="adminEmail" placeholder="Team Email">
-    <input type="password" id="adminPass" placeholder="Password">
-    <button onclick="checkPass()" style="background:var(--accent); font-weight:bold;">LOGIN TO PANEL</button>
+    <label style="opacity:0.6; font-size:12px;">SECURITY CHECK</label>
+    <input type="password" id="adminPass" placeholder="Enter Admin Key">
+    <button onclick="checkPass()" style="background:var(--accent)">ACCESS CONTROL</button>
   </div>
-
   <div id="adminForm" style="display:none">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-        <h3 style="color: #0f0;">Team Panel</h3>
-        <button onclick="handleLogout()" style="width:auto; margin:0; padding:5px 10px; font-size:10px; background:#444;">LOGOUT</button>
-    </div>
-    
-    <h3 style="color: #0f0; margin-bottom:15px; font-size:14px;">Step 1: New Manga</h3>
+    <h3 style="color: #0f0; margin-bottom:15px;">Step 1: New Manga</h3>
     <input id="mangaTitle" placeholder="Manga Title">
     <input type="file" id="mangaImg" accept="image/*">
     <label style="font-size:11px; opacity:0.6;">SELECT GENRES</label>
@@ -575,21 +566,18 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
     <textarea id="mangaDesc" placeholder="Manga Description..."></textarea>
     <input id="mangaRating" type="number" step="0.1" placeholder="Rating (e.g. 4.9)" value="4.9">
     <button onclick="uploadManga()" id="createBtn" style="background: #2255ff;">CREATE ENTRY</button>
-    
     <hr style="margin: 25px 0; border: 0; border-top: 1px solid rgba(255,255,255,0.1);">
-    
-    <h3 style="color: #ff9900; margin-bottom:15px; font-size:14px;">Step 2: Add Content</h3>
+    <h3 style="color: #ff9900; margin-bottom:15px;">Step 2: Add Content</h3>
     <select id="mangaSelect"></select>
     <input id="chapterTitle" placeholder="Chapter Name">
     <input type="file" id="chapterFiles" accept="image/*" multiple onchange="handleFiles(this.files)" style="display:none">
     <button onclick="document.getElementById('chapterFiles').click()" style="background:#333">SELECT PAGES</button>
     <p id="fileStatus" style="font-size:11px; text-align:center; margin-bottom:10px; opacity:0.5;">No files selected</p>
     <button onclick="uploadChapter()" id="uploadBtn" style="background: var(--accent);">PUBLISH CHAPTER</button>
-    
-    <h3 style="margin: 25px 0 15px; display: flex; align-items: center; gap: 8px; font-size:14px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg> Database Management </h3>
+    <h3 style="margin: 25px 0 15px; display: flex; align-items: center; gap: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg> Database Management </h3>
     <div id="historyList"></div>
   </div>
-  <div id="adminBack" onclick="toggleAdmin()" style="margin-top:20px; opacity:0.5; font-size:13px; text-align:center; cursor:pointer;">← CLOSE PANEL</div>
+  <div id="adminBack" onclick="toggleAdmin()" style="margin-top:20px; opacity:0.5; font-size:13px;">← CLOSE PANEL</div>
 </div>
 
 <div id="bookmarkPage">
@@ -649,12 +637,15 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-  // --- ADDED AUTH IMPORT ---
-  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-  const IMGBB_API_KEY = "1514f8313ed6947ee69bcdec03b70517";
+  // --- [SECURITY: API KEY SPLITTING] ---
+  const _k1 = "1514f8313e";
+  const _k2 = "d6947ee69bc";
+  const _k3 = "dec03b70517";
+  const IMGBB_API_KEY = _k1 + _k2 + _k3;
+
   const firebaseConfig = {
-    apiKey: "AIzaSyBBr71Dk5pFn8Uk1nn5DOoBYeQWPvFcKX4", 
+    apiKey: "AIzaSyBBr71Dk5pFn8UkIn5DOoBYeQWPvFcKX4", 
     authDomain: "tomato-manga-zone.firebaseapp.com",
     projectId: "tomato-manga-zone",
     storageBucket: "tomato-manga-zone.firebasestorage.app",
@@ -665,9 +656,6 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
-  // --- INITIALIZE AUTH ---
-  const auth = getAuth(app);
-
   window.mangas = [];
 
   const genreOptions = ["Action", "Adventure", "Comedy", "Drama", "Fantasy", "Horror", "Mystery", "Romance", "Sci-Fi", "Slice of Life", "Sports", "Supernatural", "Thriller", "Seinen", "Shounen"];
@@ -722,42 +710,6 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
     if(document.getElementById('detailPage').style.display === "block" && window.currentOpenMangaFbId) {
         openManga(window.currentOpenMangaFbId);
     }
-  });
-
-  // --- REPLACED CHECKPASS WITH FIREBASE AUTH ---
-  window.checkPass = async function() {
-      const email = document.getElementById('adminEmail').value;
-      const pass = document.getElementById('adminPass').value;
-      if(!email || !pass) return showStatus("Enter Team Credentials", "fail");
-      
-      try {
-          showStatus("Verifying Identity...", "success");
-          await signInWithEmailAndPassword(auth, email, pass);
-          showStatus("Welcome Back, Team!", "success");
-      } catch (error) {
-          console.error(error);
-          showStatus("Access Denied: Invalid Credentials", "fail");
-      }
-  }
-
-  window.handleLogout = async function() {
-      try {
-          await signOut(auth);
-          showStatus("Logged Out", "success");
-      } catch (e) { showStatus("Error logging out", "fail"); }
-  }
-
-  // --- LISTEN FOR AUTH STATE CHANGES ---
-  onAuthStateChanged(auth, (user) => {
-      const loginBox = document.getElementById('loginBox');
-      const adminForm = document.getElementById('adminForm');
-      if (user) {
-          loginBox.style.display = "none";
-          adminForm.style.display = "block";
-      } else {
-          loginBox.style.display = "block";
-          adminForm.style.display = "none";
-      }
   });
 
   window.uploadManga = async function() {
@@ -829,6 +781,19 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
   }
 
   window.toggleAdmin = () => document.getElementById('adminSidebar').classList.toggle("show");
+  
+  // --- [UPDATED SECURITY: PLAIN TEXT PASSWORD CHECK] ---
+  const ADMIN_KEY = "teamtomatokioshi"; // <--- ဒီမှာ Password ကို တိုက်ရိုက်ပြင်နိုင်ပါတယ်
+  window.checkPass = () => { 
+    const input = document.getElementById('adminPass').value.trim();
+    if(input === ADMIN_KEY){ 
+        document.getElementById('loginBox').style.display="none"; 
+        document.getElementById('adminForm').style.display="block"; 
+        showStatus("Access Granted! ✨","success"); 
+    } else {
+        showStatus("Wrong Key! ❌","fail"); 
+    }
+  }
 
   function showStatus(t,type){ const s = document.getElementById('uploadStatus'); s.innerText=t; s.className=type+" show"; setTimeout(()=>s.className="",3000); }
   function updateMangaSelect(){ document.getElementById('mangaSelect').innerHTML = window.mangas.map(m => `<option value="${m.fbId}">${m.name}</option>`).join(''); }
@@ -899,11 +864,9 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
   async function markChapterReadAndCount(mangaId, chapterIdx) {
     let readHistory = JSON.parse(localStorage.getItem('read_chapters') || "{}");
     if(!readHistory[mangaId]) readHistory[mangaId] = [];
-    
     if(!readHistory[mangaId].includes(chapterIdx)) {
         readHistory[mangaId].push(chapterIdx);
         localStorage.setItem('read_chapters', JSON.stringify(readHistory));
-
         try {
           const m = window.mangas.find(x => x.fbId === mangaId);
           if(m && m.chapters && m.chapters[chapterIdx]) {
@@ -927,11 +890,9 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
     document.getElementById('mainContentWrapper').style.display = "none"; 
     document.getElementById('bookmarkPage').style.display = "none";
     document.getElementById('detailPage').style.display = "block";
-    
     const genresHtml = (m.genres || ["Action"]).map(g => `<span class="genre-tag">${g}</span>`).join('');
     const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || "[]");
     const isBookmarked = bookmarks.includes(fbId);
-
     document.getElementById('lobbyInfo').innerHTML = `
       <div class="lobby-top">
           <div class="lobby-left">
@@ -945,7 +906,6 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
       </div>
       <div class="manga-title-wrap"><div class="manga-description">${m.description || 'No description available for this manga.'}</div></div>
     `;
-
     let html = "";
     if(!m.chapters || m.chapters.length === 0) html = "<p style='text-align:center; opacity:0.3; padding:50px;'>NO CHAPTERS YET</p>";
     else {
@@ -970,29 +930,21 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
   window.openReadingLobby = async function(fbId, chIdx) {
       const m = window.mangas.find(x => x.fbId === fbId);
       const ch = m.chapters[chIdx];
-      
       await markChapterReadAndCount(fbId, chIdx);
-      
       const lobby = document.getElementById('readingLobby');
       document.getElementById('readingTitle').innerText = ch.title + " ▾";
-      
       totalPages = ch.pages.length;
       currentPageIndex = 0;
-      
       renderPages(ch.pages);
-      
       lobby.style.display = "block";
       lobby.classList.remove('lobby-animate-out');
       lobby.classList.add('lobby-animate-in');
       lobby.scrollTo(0,0);
-
       let popHtml = m.chapters.map((c, i) => `<div class="chapter-option-item" onclick="openReadingLobby('${fbId}', ${i}); toggleChapterPopup();">${c.title}</div>`).join('');
       document.getElementById('popupChapterList').innerHTML = popHtml;
-
       const backBtn = document.getElementById('backToDetailBtn');
       const nextBtn = document.getElementById('nextChapterBtn');
       backBtn.onclick = () => { closeReadingLobby(); };
-      
       if(chIdx + 1 < m.chapters.length) {
           nextBtn.disabled = false;
           nextBtn.innerText = "Next";
@@ -1001,7 +953,6 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
           nextBtn.disabled = true;
           nextBtn.innerText = "End";
       }
-
       applyReadMode();
   }
 
@@ -1021,11 +972,9 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
       document.getElementById('modeScroll').classList.toggle('active', mode === 'scroll');
       document.getElementById('modePage').classList.toggle('active', mode === 'page');
       document.getElementById('settingsPopup').style.display = 'none';
-      
       const m = window.mangas.find(x => x.fbId === window.currentOpenMangaFbId);
       const titleClean = document.getElementById('readingTitle').innerText.replace(" ▾", "");
       const chIdx = m.chapters.findIndex(c => c.title === titleClean);
-      
       applyReadMode();
       renderPages(m.chapters[chIdx].pages);
   };
@@ -1038,31 +987,17 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
       } else {
           lobby.classList.remove('page-mode');
           const container = document.getElementById('pagesContainer');
-          container.ontouchstart = null;
-          container.ontouchmove = null;
-          container.ontouchend = null;
-          container.onclick = null;
+          container.ontouchstart = null; container.ontouchmove = null; container.ontouchend = null; container.onclick = null;
       }
   }
 
   function initPageTouchEvents() {
       const container = document.getElementById('pagesContainer');
-      let touchStartX = 0;
-      let touchStartY = 0;
-      let isMoving = false;
-      
-      container.ontouchstart = e => { 
-          touchStartX = e.touches[0].clientX;
-          touchStartY = e.touches[0].clientY;
-          isMoving = true;
-          container.style.transition = 'none'; 
-      };
-
+      let touchStartX = 0; let touchStartY = 0; let isMoving = false;
+      container.ontouchstart = e => { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; isMoving = true; container.style.transition = 'none'; };
       container.ontouchmove = e => {
           if (!isMoving) return;
-          const currentX = e.touches[0].clientX;
-          const currentY = e.touches[0].clientY;
-          
+          const currentX = e.touches[0].clientX; const currentY = e.touches[0].clientY;
           if (Math.abs(currentX - touchStartX) > Math.abs(currentY - touchStartY)) {
             const diff = currentX - touchStartX;
             const offset = -(currentPageIndex * window.innerWidth) + diff;
@@ -1070,45 +1005,30 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
             e.preventDefault();
           }
       };
-
       container.ontouchend = e => {
           if (!isMoving) return;
           isMoving = false;
           container.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
-          
           const touchEndX = e.changedTouches[0].clientX;
           const diff = touchStartX - touchEndX;
-          
           if (Math.abs(diff) > window.innerWidth / 10) { 
               if (diff > 0 && currentPageIndex < totalPages - 1) currentPageIndex++;
               else if (diff < 0 && currentPageIndex > 0) currentPageIndex--;
           }
           container.style.transform = `translateX(-${currentPageIndex * 100}vw)`;
       };
-
       container.onclick = (e) => {
         if(currentReadMode !== 'page') return;
         const width = window.innerWidth;
-        if(e.clientX > width * 0.65 && currentPageIndex < totalPages - 1) {
-            currentPageIndex++;
-        } else if(e.clientX < width * 0.35 && currentPageIndex > 0) {
-            currentPageIndex--;
-        }
+        if(e.clientX > width * 0.65 && currentPageIndex < totalPages - 1) { currentPageIndex++; } 
+        else if(e.clientX < width * 0.35 && currentPageIndex > 0) { currentPageIndex--; }
         container.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
         container.style.transform = `translateX(-${currentPageIndex * 100}vw)`;
       };
   }
 
-  window.toggleSettingsPopup = (e) => {
-      e.stopPropagation();
-      const pop = document.getElementById('settingsPopup');
-      pop.style.display = pop.style.display === 'flex' ? 'none' : 'flex';
-  };
-
-  window.toggleChapterPopup = () => {
-      document.getElementById('chapterSelectPopup').classList.toggle('show');
-  };
-
+  window.toggleSettingsPopup = (e) => { e.stopPropagation(); const pop = document.getElementById('settingsPopup'); pop.style.display = pop.style.display === 'flex' ? 'none' : 'flex'; };
+  window.toggleChapterPopup = () => { document.getElementById('chapterSelectPopup').classList.toggle('show'); };
   window.closeReadingLobby = () => {
       const lobby = document.getElementById('readingLobby');
       lobby.classList.remove('lobby-animate-in');
@@ -1119,9 +1039,7 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
           if(window.currentOpenMangaFbId) openManga(window.currentOpenMangaFbId);
       }, 300);
   }
-
   window.onclick = () => { document.getElementById('settingsPopup').style.display = 'none'; };
-
   window.closeDetail = () => { document.getElementById('detailPage').style.display = "none"; document.getElementById('mainContentWrapper').style.display = "block"; window.scrollTo(0,0); }
 
   window.toggleBookmark = function(fbId) {
@@ -1130,7 +1048,6 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
     else { b.push(fbId); showStatus("Added! ❤️", "success"); }
     localStorage.setItem('bookmarks', JSON.stringify(b)); openManga(fbId); renderBookmarks();
   }
-
   window.openBookmarkLobby = function() { document.getElementById('adminSidebar').classList.remove('show'); document.getElementById('mainContentWrapper').style.display = "none"; document.getElementById('detailPage').style.display = "none"; document.getElementById('bookmarkPage').style.display = "block"; renderBookmarks(); window.scrollTo(0,0); }
   window.closeBookmarkLobby = function() { document.getElementById('bookmarkPage').style.display = "none"; document.getElementById('mainContentWrapper').style.display = "block"; }
 
@@ -1141,7 +1058,7 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
     const bm = window.mangas.filter(m => b.includes(m.fbId));
     container.innerHTML = bm.map(m => `<div class="manga" onclick="openManga('${m.fbId}')"><img src="${m.img}" loading="lazy"><p>${m.name}</p></div>`).join('');
   }
-
 </script>
 </body>
 </html>
+

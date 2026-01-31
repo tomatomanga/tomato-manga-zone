@@ -759,14 +759,20 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
     window.mangas = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
     renderPublic(); renderFeatured(); renderShowcase(); renderHistory(); updateMangaSelect(); renderBookmarks();
     
-    // Recovery Logic: If page refreshed, check if we were inside a specific manga or lobby
+      // --- [ RECOVERY LOGIC FIXED ] ---
     const savedLobby = localStorage.getItem('activeLobbyId');
     const savedMangaFbId = localStorage.getItem('currentOpenMangaFbId');
     const savedChapterIdx = localStorage.getItem('currentReadChapterIdx');
 
-    if(savedLobby && savedLobby !== 'intro' && document.getElementById('intro').style.display !== "none") {
+    if(savedLobby && savedLobby !== 'intro') {
+        // Intro Screen ကို အတင်းဖျောက်ခိုင်းတာပါ
         document.getElementById('intro').style.display = "none";
         
+        // ပျောက်နေတဲ့ Main Content ကို အတင်းပြန်ဖော်ခိုင်းတာပါ
+        const main = document.getElementById('mainContentWrapper');
+        main.style.display = "block";
+        main.style.opacity = "1";
+
         if (savedLobby === 'readingLobby' && savedMangaFbId && savedChapterIdx !== null) {
             window.currentOpenMangaFbId = savedMangaFbId;
             openReadingLobby(savedMangaFbId, parseInt(savedChapterIdx));
@@ -776,6 +782,7 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
             navigateTo(savedLobby);
         }
     }
+
 
     if(document.getElementById('detailPage').style.display === "block" && window.currentOpenMangaFbId) {
         openManga(window.currentOpenMangaFbId);

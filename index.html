@@ -678,6 +678,9 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
   const lobbyScrollMemory = {};
 
   window.navigateTo = function(targetId) {
+    // Persistent Storage: Save current active lobby ID
+    localStorage.setItem('activeLobbyId', targetId);
+
     const allLobbies = document.querySelectorAll('.app-lobby');
     const currentScroll = window.scrollY;
 
@@ -755,6 +758,25 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
   onSnapshot(collection(db, "mangas"), (snapshot) => {
     window.mangas = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
     renderPublic(); renderFeatured(); renderShowcase(); renderHistory(); updateMangaSelect(); renderBookmarks();
+    
+    // Recovery Logic: If page refreshed, check if we were inside a specific manga or lobby
+    const savedLobby = localStorage.getItem('activeLobbyId');
+    const savedMangaFbId = localStorage.getItem('currentOpenMangaFbId');
+    const savedChapterIdx = localStorage.getItem('currentReadChapterIdx');
+
+    if(savedLobby && savedLobby !== 'intro' && document.getElementById('intro').style.display !== "none") {
+        document.getElementById('intro').style.display = "none";
+        
+        if (savedLobby === 'readingLobby' && savedMangaFbId && savedChapterIdx !== null) {
+            window.currentOpenMangaFbId = savedMangaFbId;
+            openReadingLobby(savedMangaFbId, parseInt(savedChapterIdx));
+        } else if (savedLobby === 'detailPage' && savedMangaFbId) {
+            openManga(savedMangaFbId);
+        } else {
+            navigateTo(savedLobby);
+        }
+    }
+
     if(document.getElementById('detailPage').style.display === "block" && window.currentOpenMangaFbId) {
         openManga(window.currentOpenMangaFbId);
     }
@@ -823,6 +845,7 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
         lobby.classList.add("animate-in"); 
         shouldAnimateMangas = true;
         renderPublic();
+        localStorage.setItem('activeLobbyId', 'mainContentWrapper');
         setTimeout(() => { shouldAnimateMangas = false; }, 2000);
     }, 800);
   }
@@ -952,18 +975,20 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
     return readHistory[mangaId] && readHistory[mangaId].includes(chapterIdx);
   }
 
-  // --- [ UPDATED OPEN MANGA WITH NAVIGATE ] ---
   window.openManga = function(fbId){
     if (isDown) return;
     
-    // Auto-save: Remember if we came from bookmarks or main for back button
+    // Remember current manga for refresh
+    localStorage.setItem('currentOpenMangaFbId', fbId);
+
     const isInBookmark = document.getElementById('bookmarkPage').style.display === "block";
     sessionStorage.setItem('active_lobby_source', isInBookmark ? 'bookmark' : 'main');
 
     window.currentOpenMangaFbId = fbId;
     const m = window.mangas.find(x => x.fbId === fbId);
     
-    // Use Universal Navigation
+    if(!m) return;
+
     navigateTo('detailPage');
     
     const genresHtml = (m.genres || ["Action"]).map(g => `<span class="genre-tag">${g}</span>`).join('');
@@ -1004,10 +1029,15 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
 
   window.openReadingLobby = async function(fbId, chIdx) {
       const m = window.mangas.find(x => x.fbId === fbId);
+      if(!m) return;
+
       const ch = m.chapters[chIdx];
       await markChapterReadAndCount(fbId, chIdx);
       
-      // Use Universal Navigation
+      // Save for refresh
+      localStorage.setItem('currentOpenMangaFbId', fbId);
+      localStorage.setItem('currentReadChapterIdx', chIdx);
+
       navigateTo('readingLobby');
 
       document.getElementById('readingTitle').innerText = ch.title + " ▾";
@@ -1119,14 +1149,14 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
   window.toggleChapterPopup = () => { document.getElementById('chapterSelectPopup').classList.toggle('show'); };
   
   window.closeReadingLobby = () => {
-      // Return to detail page using navigate system
+      localStorage.removeItem('currentReadChapterIdx');
       navigateTo('detailPage');
   }
 
   window.onclick = () => { document.getElementById('settingsPopup').style.display = 'none'; };
   
-  // --- [ UPDATED CLOSE DETAIL WITH NAVIGATE ] ---
   window.closeDetail = () => { 
+    localStorage.removeItem('currentOpenMangaFbId');
     const source = sessionStorage.getItem('active_lobby_source') || 'main';
     const target = (source === 'bookmark') ? 'bookmarkPage' : 'mainContentWrapper';
     navigateTo(target);

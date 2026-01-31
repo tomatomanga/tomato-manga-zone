@@ -11,7 +11,7 @@
 :root{ --bg:#000; --text:#fff; --card:#111; --accent:#ff2a2a; --glass: rgba(255, 255, 255, 0.08); --flare: rgba(255, 42, 42, 0.4); }
 body.light{ --bg:#fff; --text:#000; --card:#f2f2f2; --accent:#ff2a2a; --glass: rgba(0, 0, 0, 0.05); --flare: rgba(255, 42, 42, 0.2); }
 
-/* --- [REFRESH FIX: PREVENT PULL-TO-REFRESH] --- */
+/* --- REFRESH FIX ADDED HERE --- */
 html, body { 
   width:100%; 
   height: 100%;
@@ -20,17 +20,22 @@ html, body {
   font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
   transition:.35s; 
   scroll-behavior: auto !important; 
-  overflow: hidden; /* Prevent body scroll to stop pull-to-refresh */
-  overscroll-behavior-y: none; /* Modern browser fix */
+  overflow-x: hidden;
+  /* Disable Pull-to-refresh */
+  overscroll-behavior-y: contain; 
 }
 
-/* Performance Boost & Layout Fix */
-#mainContentWrapper, #detailPage, #readingLobby, #bookmarkPage {
+/* Scrollable areas (Fixing scroll for content) */
+.app-lobby {
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Performance Boost */
+#mangaList, #featuredBar, #chapterList, #bookmarkList {
   content-visibility: auto;
   contain-intrinsic-size: 500px;
-  height: 100vh;
-  overflow-y: auto; /* Enable scrolling inside containers */
-  -webkit-overflow-scrolling: touch;
 }
 
 /* --- PREMIUM CINEMATIC ANIMATIONS --- */
@@ -132,7 +137,8 @@ html, body {
 #introBg svg{width:160px;height:220px;border-radius:6px}
 @keyframes introMove{ from{transform:translate(0,0)} to{transform:translate(-600px,-500px)} }
 
-#mainContentWrapper { display: none; opacity: 0; }
+/* --- REFRESH FIX: Changed display to block for persistent state --- */
+#mainContentWrapper { display: block; opacity: 0; }
 #mainContentWrapper.animate-in { display: block; animation: lobbyEntrance 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
 #mainHeader { 
@@ -237,7 +243,7 @@ html, body {
 .manga p{text-align:center;font-size:14px;font-weight:600;margin-top:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; opacity: 0.9;}
 
 /* --- UPDATED PREMIUM DETAIL LOBBY --- */
-#detailPage{display:none; padding: 0; width: 100%; background: var(--bg); position: fixed; top: 0; left: 0; z-index: 5000; height: 100vh;}
+#detailPage{display:none; padding: 0; width: 100%; background: var(--bg); position: absolute; top: 0; left: 0; z-index: 5000; min-height: 100vh;}
 
 .lobby-container {
   padding: 20px;
@@ -370,6 +376,7 @@ html, body {
 .chapter-item:active { transform: scale(0.97); background: var(--accent); }
 .chapter-item span { font-weight: 700; font-size: 15px; }
 
+/* View Count Styling */
 .view-count {
   font-size: 12px;
   opacity: 0.8;
@@ -381,7 +388,7 @@ html, body {
   right: 20px;
 }
 
-/* HD RENDERING */
+/* --- [NEW: HD RENDERING SYSTEM] --- */
 #pagesContainer img {
     image-rendering: -webkit-optimize-contrast;
     image-rendering: high-quality;
@@ -395,7 +402,7 @@ html, body {
     pointer-events: none;
 }
 
-/* READING LOBBY */
+/* READING LOBBY - SMOOTH PERFORMANCE */
 #readingLobby {
     display: none;
     position: fixed;
@@ -405,6 +412,11 @@ html, body {
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+}
+
+/* Smooth Scroll for Continuous Mode */
+#readingLobby:not(.page-mode) {
+    scroll-behavior: auto;
 }
 
 #readingLobby.page-mode { 
@@ -422,6 +434,7 @@ html, body {
     will-change: transform;
 }
 
+/* --- ENHANCED PAGE MODE RATIO & NAVIGATION --- */
 #readingLobby.page-mode #pagesContainer {
     flex-direction: row;
     height: 100vh;
@@ -453,6 +466,7 @@ html, body {
     display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
+/* READING LOBBY NAV PANEL */
 .reading-nav-panel {
     display: flex;
     justify-content: space-between;
@@ -477,6 +491,7 @@ html, body {
 .nav-btn.back-to-lobby { background: #333; }
 .nav-btn:disabled { opacity: 0.3; cursor: default; }
 
+/* Chapter Selection & Settings Popups */
 .reader-controls { display: flex; align-items: center; gap: 10px; }
 #chapterSelectPopup {
     position: fixed; bottom: -100%; left: 0; width: 100%; max-height: 60vh;
@@ -494,7 +509,7 @@ html, body {
 .setting-choice { padding: 12px; border-radius: 8px; cursor: pointer; text-align: center; font-size: 14px; font-weight: bold; }
 .setting-choice.active { background: var(--accent); color: white; }
 
-#adminSidebar{ position:fixed;top:0;right:-320px;width:320px;height:100%; background:rgba(15,15,15,0.95); backdrop-filter: blur(20px); padding:25px; transition: 0.5s cubic-bezier(0.85, 0, 0.15, 1); z-index:6500; overflow-y:auto; box-shadow: -10px 0 30px rgba(0,0,0,0.8); }
+#adminSidebar{ position:fixed;top:0;right:-320px;width:320px;height:100%; background:rgba(15,15,15,0.95); backdrop-filter: blur(20px); padding:25px; transition: 0.5s cubic-bezier(0.85, 0, 0.15, 1); z-index:6000; overflow-y:auto; box-shadow: -10px 0 30px rgba(0,0,0,0.8); }
 #adminSidebar.show{right:0}
 #adminSidebar input,#adminSidebar button,#adminSidebar select,#adminSidebar textarea{ width:100%;margin:8px 0 15px;padding:14px;background:rgba(255,255,255,0.05);color:white;border:1px solid rgba(255,255,255,0.1);border-radius:10px; outline: none; }
 #adminSidebar textarea { height: 100px; resize: none; font-family: inherit; font-size: 13px; }
@@ -515,7 +530,7 @@ html, body {
 .del-btn:hover { background: #ff0000; color: white; }
 .manga-del-btn { margin-left: auto; color: #ff4444; cursor: pointer; padding: 5px; }
 
-#bookmarkPage { display:none; padding: 20px; width: 100%; height: 100vh; background: var(--bg); position: fixed; top: 0; left: 0; z-index: 5500; overflow-y: auto; }
+#bookmarkPage { display:none; padding: 20px; width: 100%; min-height: 100vh; background: var(--bg); position: fixed; top: 0; left: 0; z-index: 5500; overflow-y: auto; }
 .bookmark-header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
 .bookmark-btn-sidebar { display: flex; align-items: center; gap: 12px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 20px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; }
 .bookmark-btn-sidebar:active { transform: scale(0.95); background: var(--accent); }
@@ -656,30 +671,7 @@ html, body {
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  // --- [REFRESH LOCK SYSTEM: JS SIDE] ---
-  // ၁။ Pull-to-refresh ကို Browser touch event တွေနဲ့ ပိတ်မယ်
-  document.addEventListener('touchstart', (e) => {
-      this.startY = e.touches[0].pageY;
-  }, { passive: false });
-
-  document.addEventListener('touchmove', (e) => {
-      const y = e.touches[0].pageY;
-      // Scroll ထိပ်ဆုံးရောက်နေချိန် အောက်ဆွဲချရင် တားမယ်
-      if (window.scrollY <= 0 && y > this.startY) {
-          // e.preventDefault(); 
-      }
-  }, { passive: false });
-
-  // ၂။ Browser Refresh Shortcuts (F5, Ctrl+R) တွေကို ပိတ်မယ်
-  window.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && (e.keyCode == 82 || e.keyCode == 116)) {
-      e.preventDefault();
-    }
-    if (e.keyCode == 116) {
-      e.preventDefault();
-    }
-  });
-
+  // --- [SECURITY: API KEY SPLITTING] ---
   const _k1 = "1514f8313e";
   const _k2 = "d6947ee69bc";
   const _k3 = "dec03b70517";
@@ -699,19 +691,23 @@ html, body {
   const db = getFirestore(app);
   window.mangas = [];
   
+  // Flag to control slide up animation (Only on startup)
   let shouldAnimateMangas = true;
 
+  // --- [ UNIVERSAL LOBBY & SCROLL SYSTEM ] ---
   const lobbyScrollMemory = {};
 
   window.navigateTo = function(targetId) {
+    // --- [ REFRESH FIX: Persistent Storage: Save current active lobby ID ] ---
     localStorage.setItem('activeLobbyId', targetId);
 
     const allLobbies = document.querySelectorAll('.app-lobby');
     const currentScroll = window.scrollY;
 
     allLobbies.forEach(lobby => {
+      // Save current scroll and hide
       if (getComputedStyle(lobby).display === 'block') {
-        lobbyScrollMemory[lobby.id] = lobby.scrollTop;
+        lobbyScrollMemory[lobby.id] = currentScroll;
         lobby.style.display = 'none';
       }
     });
@@ -721,10 +717,14 @@ html, body {
       target.style.display = 'block';
       const savedPos = lobbyScrollMemory[targetId] || 0;
       
+      // Handle special flags for animations
       if(targetId === 'mainContentWrapper') shouldAnimateMangas = false;
 
       setTimeout(() => {
-        target.scrollTop = savedPos;
+        window.scrollTo({
+          top: savedPos,
+          behavior: 'instant'
+        });
       }, 40);
     }
   };
@@ -779,6 +779,7 @@ html, body {
     window.mangas = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
     renderPublic(); renderFeatured(); renderShowcase(); renderHistory(); updateMangaSelect(); renderBookmarks();
     
+    // --- [ MULTI-LOBBY REFRESH RECOVERY FIXED ] ---
     const savedLobby = localStorage.getItem('activeLobbyId');
     const savedMangaFbId = localStorage.getItem('currentOpenMangaFbId');
     const savedChapterIdx = localStorage.getItem('currentReadChapterIdx');

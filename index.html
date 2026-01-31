@@ -730,24 +730,50 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
     btn.disabled = false;
   }
 
+  // --- [UPDATED: SEQUENTIAL UPLOAD WITH 1/50 PROGRESS] ---
   window.uploadChapter = async function() {
     const selectedFbId = document.getElementById('mangaSelect').value;
     const cTitle = document.getElementById('chapterTitle').value;
     const files = Array.from(document.getElementById('chapterFiles').files);
     const btn = document.getElementById('uploadBtn');
-    if(!selectedFbId || !cTitle || files.length === 0) return showStatus("Missing info","fail");
+    
+    if(!selectedFbId || !cTitle || files.length === 0) return showStatus("Missing information!","fail");
+    
     btn.disabled = true; 
-    showStatus(`Parallel Uploading ${files.length} pages...`, "success");
+    const cloudUrls = [];
+    const totalFiles = files.length;
+    
     try {
-      const cloudUrls = await Promise.all(files.map(file => processAndUpload(file)));
+      // Counter Strategy: Sequential processing with delay
+      for (let i = 0; i < totalFiles; i++) {
+          // Progress Status: "Uploading: Page 1 / 50..."
+          showStatus(`Uploading: Page ${i + 1} / ${totalFiles} ... 🍅`, "success");
+
+          // Process and Upload one by one
+          const url = await processAndUpload(files[i]);
+          cloudUrls.push(url);
+
+          // 1.5s delay to keep ImgBB happy
+          if (i < totalFiles - 1) {
+              await new Promise(resolve => setTimeout(resolve, 1500));
+          }
+      }
+
       const targetManga = window.mangas.find(m => m.fbId === selectedFbId);
       const updatedChapters = [...(targetManga.chapters || []), { title: cTitle, pages: cloudUrls, views: 0 }];
       await updateDoc(doc(db, "mangas", selectedFbId), { chapters: updatedChapters });
+      
       document.getElementById('chapterTitle').value = ""; 
+      document.getElementById('chapterFiles').value = "";
       document.getElementById('fileStatus').innerText = "No files selected";
-      showStatus("Chapter Published! 🚀","success");
-    } catch(e) { console.error(e); showStatus("Upload Failed","fail"); }
-    btn.disabled = false;
+      showStatus(`Published ${totalFiles} pages successfully! ✅`, "success");
+      
+    } catch(e) { 
+      console.error(e); 
+      showStatus("Upload Process Failed! Check connection.", "fail"); 
+    } finally {
+      btn.disabled = false;
+    }
   }
 
   window.deleteManga = async function(fbId) { if(confirm("Delete entire Manga?")) { try { await deleteDoc(doc(db, "mangas", fbId)); showStatus("Removed","success"); } catch(e) { showStatus("Error","fail"); } } }
@@ -782,8 +808,7 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
 
   window.toggleAdmin = () => document.getElementById('adminSidebar').classList.toggle("show");
   
-  // --- [UPDATED SECURITY: PLAIN TEXT PASSWORD CHECK] ---
-  const ADMIN_KEY = "teamtomatokioshi"; // <--- ဒီမှာ Password ကို တိုက်ရိုက်ပြင်နိုင်ပါတယ်
+  const ADMIN_KEY = "teamtomatokioshi";
   window.checkPass = () => { 
     const input = document.getElementById('adminPass').value.trim();
     if(input === ADMIN_KEY){ 
@@ -1061,4 +1086,3 @@ html,body{ width:100%; min-height:100%; background:var(--bg); color:var(--text);
 </script>
 </body>
 </html>
-

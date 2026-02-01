@@ -101,7 +101,7 @@ html, body {
 /* CODE အသစ်: PREMIUM COVER BADGE (Bottom Left Inside) */
 .premium-cover-badge {
     position: absolute;
-    bottom: 45px; /* Image ရဲ့ အောက်ခြေနား (စာသားနဲ့ မလွတ်အောင် ချိန်ထားပါတယ်) */
+    bottom: 45px; 
     left: 8px;
     background: rgba(0, 0, 0, 0.65);
     backdrop-filter: blur(8px);
@@ -171,6 +171,19 @@ html, body {
   border-radius: 10px;
 }
 
+/* 300kbps OPTIMIZATION: Skeleton for reader */
+.page-item, .scroll-item {
+    min-height: 450px;
+    background: #111;
+    background-image: linear-gradient(90deg, #111 25%, #1a1a1a 50%, #111 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite linear;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 #intro { 
   position:fixed; inset:0; background:black; display:flex; 
   flex-direction:column; justify-content:center; align-items:center; 
@@ -202,7 +215,6 @@ html, body {
 
 #headerInner{ height:80px; display:flex; align-items:center; padding:0 18px; justify-content: space-between; overflow: visible; position: relative;}
 
-/* --- UPDATED SEARCH CONTAINER --- */
 #searchContainer {
   position: absolute; left: 18px; right: 80px; height: 50px;
   background: var(--card); border-radius: 15px; border: 1px solid var(--accent);
@@ -217,7 +229,6 @@ html, body {
 }
 .searchClose { color: var(--accent); font-weight: 900; cursor: pointer; padding: 5px; font-size: 20px;}
 
-/* PREMIUM SEARCH DROPDOWN LIST */
 #searchDropdown {
     position: absolute;
     top: calc(100% + 5px);
@@ -332,7 +343,6 @@ html, body {
   display: none; 
 }
 
-/* --- NEW PREMIUM TITLE STYLE --- */
 .manga-list-header {
   padding: 30px 25px 5px;
   display: flex;
@@ -473,7 +483,6 @@ html, body {
 
 .backBtn{background:var(--card);color:white;padding:12px 20px;margin: 20px;border-radius:30px;cursor:pointer;border:1px solid rgba(255,255,255,0.1); font-weight: bold; transition: 0.3s; display: inline-block;}
 
-/* --- CHAPTER LIST SECTION --- */
 .chapter-list-section {
     margin-top: 20px;
     padding: 0 20px 40px;
@@ -523,7 +532,6 @@ html, body {
     -ms-interpolation-mode: bicubic;
     transform: translateZ(0);
     will-change: transform;
-    filter: sharpness(1.05);
     width: 100%; 
     display: block; 
     height: auto;
@@ -617,7 +625,6 @@ html, body {
 .setting-choice { padding: 12px; border-radius: 8px; cursor: pointer; text-align: center; font-size: 14px; font-weight: bold; }
 .setting-choice.active { background: var(--accent); color: white; }
 
-/* --- ADMIN PANEL PREMIUM RE-DESIGN --- */
 #adminSidebar { 
     position:fixed; top:0; right:-320px; width:320px; height:100%; 
     background: #0a0a0a; backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); 
@@ -685,7 +692,6 @@ html, body {
 .del-btn { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: rgba(255,0,0,0.1); color: #ff4444; border-radius: 5px; cursor: pointer; transition: 0.2s;}
 .del-btn:hover { background: #ff0000; color: white; }
 
-/* PREMIUM TRASH ICON STYLE */
 .manga-del-btn {
   margin-left: auto; color: #ff4444; cursor: pointer; padding: 8px; border-radius: 8px;
   background: rgba(255, 68, 68, 0.1); border: 1px solid rgba(255, 68, 68, 0.2);
@@ -868,11 +874,6 @@ html, body {
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc, increment, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  const _k1 = "1514f8313e";
-  const _k2 = "d6947ee69bc";
-  const _k3 = "dec03b70517";
-  const IMGBB_API_KEY = _k1 + _k2 + _k3;
-
   const firebaseConfig = {
     apiKey: "AIzaSyBBr71Dk5pFn8UkIn5DOoBYeQWPvFcKX4", 
     authDomain: "tomato-manga-zone.firebaseapp.com",
@@ -887,7 +888,6 @@ html, body {
   const db = getFirestore(app);
   window.mangas = [];
   
-  // INFINITE SCROLL SETTINGS
   let currentLimit = 6;
   let unsubscribeManga = null;
   let shouldAnimateMangas = true;
@@ -927,6 +927,7 @@ html, body {
   const list = document.getElementById('mangaList');
   list.innerHTML = Array(6).fill(0).map(() => `<div class="skeleton" style="width:100%; aspect-ratio:3/4;"></div>`).join('');
   
+  // --- CLOUDFLARE PROXY INTEGRATED processAndUpload ---
   async function processAndUpload(file) {
       return new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -951,9 +952,21 @@ html, body {
                       try {
                           let formData = new FormData();
                           formData.append("image", blob);
-                          const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData });
+                          
+                          // မင်းရဲ့ Cloudflare Worker Link ကို ဒီမှာ အသုံးပြုထားပါတယ်
+                          const WORKER_URL = "https://tomato-proxy.canchicanchi321.workers.dev";
+                          
+                          const res = await fetch(WORKER_URL, { 
+                              method: "POST", 
+                              body: formData 
+                          });
+                          
                           const data = await res.json();
-                          resolve(data.data.url);
+                          if (data.success) {
+                              resolve(data.data.url);
+                          } else {
+                              reject("Upload failed through Worker");
+                          }
                       } catch (e) { reject(e); }
                   }, 'image/jpeg', 0.9);
               };
@@ -966,7 +979,6 @@ html, body {
 
   window.handleFiles = function(files) { document.getElementById('fileStatus').innerText = files.length + " pages ready."; }
 
-  // --- UPDATED: REAL-TIME LISTENER WITH LIMIT ---
   function startMangaListener() {
       if (unsubscribeManga) unsubscribeManga();
       const mangaQuery = query(collection(db, "mangas"), orderBy("lastUpdated", "desc"), limit(currentLimit));
@@ -980,7 +992,6 @@ html, body {
       });
   }
 
-  // INFINITE SCROLL TRIGGER
   document.getElementById('mainContentWrapper').addEventListener('scroll', (e) => {
       const { scrollTop, scrollHeight, clientHeight } = e.target;
       if (scrollTop + clientHeight >= scrollHeight - 300) {
@@ -991,10 +1002,8 @@ html, body {
       }
   });
 
-  // Start Listener
   startMangaListener();
 
-  /* --- LIVE SEARCH LOGIC --- */
   let searchTimer;
   window.liveSearch = function(val) {
     const dropdown = document.getElementById('searchDropdown');
@@ -1050,10 +1059,9 @@ html, body {
     btn.disabled = false;
   }
 
-  // ✨ UPDATED: AUTO-OVERWRITE & SORTING LOGIC ADDED HERE ✨
   window.uploadChapter = async function() {
     const selectedFbId = document.getElementById('mangaSelect').value;
-    const cTitle = document.getElementById('chapterTitle').value.trim();
+    const cTitle = document.getElementById('chapterTitle').value;
     const files = Array.from(document.getElementById('chapterFiles').files);
     const btn = document.getElementById('uploadBtn');
     if(!selectedFbId || !cTitle || files.length === 0) return showStatus("Missing information!","fail");
@@ -1065,42 +1073,15 @@ html, body {
           showStatus(`Uploading: Page ${i + 1} / ${totalFiles} ... 🍅`, "success");
           const url = await processAndUpload(files[i]);
           cloudUrls.push(url);
-          if (i < totalFiles - 1) { await new Promise(resolve => setTimeout(resolve, 800)); }
+          if (i < totalFiles - 1) { await new Promise(resolve => setTimeout(resolve, 1000)); }
       }
-      
       const targetManga = window.mangas.find(m => m.fbId === selectedFbId);
       const now = Date.now();
-
-      // Logic: အရင်ရှိပြီးသားထဲမှာ နာမည်တူတာရှိရင် ဖြုတ်ထုတ်မယ် (Overwrite)
-      const existingChapters = targetManga.chapters || [];
-      const filteredChapters = existingChapters.filter(ch => ch.title !== cTitle);
-
-      // Chapter အသစ်ပေါင်းထည့်မယ်
-      const updatedChapters = [...filteredChapters, { 
-          title: cTitle, 
-          pages: cloudUrls, 
-          views: 0, 
-          timestamp: now 
-      }];
-
-      // Chapter List ကို နံပါတ်စဉ်အလိုက် ပြန်စီမယ် (1, 2, 3...)
-      updatedChapters.sort((a, b) => a.title.localeCompare(b.title, undefined, {numeric: true, sensitivity: 'base'}));
-
-      await updateDoc(doc(db, "mangas", selectedFbId), { 
-          chapters: updatedChapters, 
-          lastUpdated: now 
-      });
-
-      document.getElementById('chapterTitle').value = ""; 
-      document.getElementById('chapterFiles').value = ""; 
-      document.getElementById('fileStatus').innerText = "No files selected";
+      const updatedChapters = [...(targetManga.chapters || []), { title: cTitle, pages: cloudUrls, views: 0, timestamp: now }];
+      await updateDoc(doc(db, "mangas", selectedFbId), { chapters: updatedChapters, lastUpdated: now });
+      document.getElementById('chapterTitle').value = ""; document.getElementById('chapterFiles').value = ""; document.getElementById('fileStatus').innerText = "No files selected";
       showStatus(`Published ${totalFiles} pages successfully! ✅`, "success");
-    } catch(e) { 
-        console.error(e);
-        showStatus("Upload Process Failed!", "fail"); 
-    } finally { 
-        btn.disabled = false; 
-    }
+    } catch(e) { showStatus("Upload Process Failed!", "fail"); } finally { btn.disabled = false; }
   }
 
   window.deleteManga = async function(fbId) { 
@@ -1350,19 +1331,31 @@ html, body {
       applyReadMode();
   }
 
-  function renderPages(pages) {
+  async function renderPages(pages) {
       const container = document.getElementById('pagesContainer');
       container.innerHTML = ''; 
-      pages.forEach((p, index) => {
+      
+      for (let i = 0; i < pages.length; i++) {
+          const div = document.createElement('div');
+          div.className = (currentReadMode === 'page') ? 'page-item' : 'scroll-item';
+          
           const img = document.createElement('img');
-          if (index > 2) img.loading = "lazy";
-          img.src = p;
-          img.style.opacity = "0"; 
-          img.style.transition = "opacity 0.4s ease-in"; 
-          img.onload = () => { img.style.opacity = "1"; };
-          if(currentReadMode === 'scroll') container.appendChild(img);
-          else { const div = document.createElement('div'); div.className = 'page-item'; div.appendChild(img); container.appendChild(div); }
-      });
+          img.style.opacity = "0";
+          img.style.transition = "opacity 0.6s ease-in";
+          
+          if (i > 2) { img.loading = "lazy"; }
+          
+          img.src = pages[i];
+          
+          img.onload = () => {
+              img.style.opacity = "1";
+          };
+          
+          div.appendChild(img);
+          container.appendChild(div);
+
+          if (i < 2) await new Promise(r => setTimeout(r, 400));
+      }
       container.style.transform = (currentReadMode === 'scroll') ? `none` : `translateX(0)`;
   }
 
@@ -1372,8 +1365,10 @@ html, body {
       document.getElementById('modePage').classList.toggle('active', mode === 'page');
       document.getElementById('settingsPopup').style.display = 'none';
       const m = window.mangas.find(x => x.fbId === window.currentOpenMangaFbId);
-      const chIdx = m.chapters.findIndex(c => c.title === document.getElementById('readingTitle').innerText.replace(" ▾", ""));
-      applyReadMode(); renderPages(m.chapters[chIdx].pages);
+      const chIdx = localStorage.getItem('currentReadChapterIdx');
+      if (chIdx !== null && m.chapters[chIdx]) {
+          applyReadMode(); renderPages(m.chapters[chIdx].pages);
+      }
   };
 
   function applyReadMode() {
@@ -1448,4 +1443,3 @@ html, body {
 </script>
 </body>
 </html>
-

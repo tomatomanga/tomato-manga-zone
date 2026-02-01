@@ -200,8 +200,9 @@ html, body {
   border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 
-#headerInner{ height:80px; display:flex; align-items:center; padding:0 18px; justify-content: space-between; overflow: hidden; position: relative;}
+#headerInner{ height:80px; display:flex; align-items:center; padding:0 18px; justify-content: space-between; overflow: visible; position: relative;}
 
+/* --- UPDATED SEARCH CONTAINER --- */
 #searchContainer {
   position: absolute; left: 18px; right: 80px; height: 50px;
   background: var(--card); border-radius: 15px; border: 1px solid var(--accent);
@@ -215,6 +216,61 @@ html, body {
   color: var(--text); font-size: 15px; font-weight: 500;
 }
 .searchClose { color: var(--accent); font-weight: 900; cursor: pointer; padding: 5px; font-size: 20px;}
+
+/* PREMIUM SEARCH DROPDOWN LIST */
+#searchDropdown {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    width: 100%;
+    background: #111;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 42, 42, 0.3);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    display: none;
+    flex-direction: column;
+    max-height: 350px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.search-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    transition: 0.2s;
+}
+
+.search-item:hover {
+    background: rgba(255, 42, 42, 0.1);
+}
+
+.search-item img {
+    width: 45px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-right: 12px;
+}
+
+.search-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.search-item-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.search-item-meta {
+    font-size: 11px;
+    color: #888;
+}
 
 #headerCenter { 
   text-align: center; transition: 0.4s; flex: 1;
@@ -660,8 +716,9 @@ html, body {
     <div id="mainHeader">
       <div id="headerInner">
         <div id="searchContainer">
-          <input type="text" placeholder="Explore your manga..." id="searchInput">
+          <input type="text" placeholder="Explore your manga..." id="searchInput" onkeyup="liveSearch(this.value)" autocomplete="off">
           <span class="searchClose" onclick="toggleSearch(false)">✕</span>
+          <div id="searchDropdown"></div>
         </div>
         <div class="iconBtn" id="openSearchBtn" onclick="toggleSearch(true)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -918,6 +975,39 @@ html, body {
     }
   });
 
+  /* --- NEW: LIVE SEARCH LOGIC --- */
+  let searchTimer;
+  window.liveSearch = function(val) {
+    const dropdown = document.getElementById('searchDropdown');
+    clearTimeout(searchTimer);
+    
+    if(!val.trim()) {
+        dropdown.style.display = "none";
+        return;
+    }
+
+    searchTimer = setTimeout(() => {
+        const queryStr = val.toLowerCase();
+        const filtered = window.mangas.filter(m => m.name.toLowerCase().includes(queryStr)).slice(0, 5);
+        
+        if(filtered.length > 0) {
+            dropdown.innerHTML = filtered.map(m => `
+                <div class="search-item" onclick="openManga('${m.fbId}'); toggleSearch(false);">
+                    <img src="${m.img}" alt="cover">
+                    <div class="search-item-info">
+                        <span class="search-item-title">${m.name}</span>
+                        <span class="search-item-meta">⭐ ${m.rating || '4.9'} | ${(m.genres || ['Action'])[0]}</span>
+                    </div>
+                </div>
+            `).join('');
+            dropdown.style.display = "flex";
+        } else {
+            dropdown.innerHTML = `<div style="padding:15px; text-align:center; font-size:12px; opacity:0.5;">No results found</div>`;
+            dropdown.style.display = "flex";
+        }
+    }, 300);
+  }
+
   window.uploadManga = async function() {
     const title = document.getElementById('mangaTitle').value;
     const imgInput = document.getElementById('mangaImg');
@@ -1027,8 +1117,9 @@ html, body {
   window.toggleSearch = (show) => {
     const container = document.getElementById('searchContainer');
     const logo = document.getElementById('headerCenter');
+    const dropdown = document.getElementById('searchDropdown');
     if(show) { container.classList.add('active'); logo.classList.add('hide'); document.getElementById('searchInput').focus(); } 
-    else { container.classList.remove('active'); logo.classList.remove('hide'); document.getElementById('searchInput').value = ""; }
+    else { container.classList.remove('active'); logo.classList.remove('hide'); document.getElementById('searchInput').value = ""; dropdown.style.display = "none"; }
   }
 
   document.getElementById('themeBtn').onclick = function() {
@@ -1374,3 +1465,4 @@ html, body {
 </script>
 </body>
 </html>
+

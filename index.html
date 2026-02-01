@@ -1050,9 +1050,10 @@ html, body {
     btn.disabled = false;
   }
 
+  // ✨ UPDATED: AUTO-OVERWRITE & SORTING LOGIC ADDED HERE ✨
   window.uploadChapter = async function() {
     const selectedFbId = document.getElementById('mangaSelect').value;
-    const cTitle = document.getElementById('chapterTitle').value;
+    const cTitle = document.getElementById('chapterTitle').value.trim();
     const files = Array.from(document.getElementById('chapterFiles').files);
     const btn = document.getElementById('uploadBtn');
     if(!selectedFbId || !cTitle || files.length === 0) return showStatus("Missing information!","fail");
@@ -1064,15 +1065,42 @@ html, body {
           showStatus(`Uploading: Page ${i + 1} / ${totalFiles} ... 🍅`, "success");
           const url = await processAndUpload(files[i]);
           cloudUrls.push(url);
-          if (i < totalFiles - 1) { await new Promise(resolve => setTimeout(resolve, 1000)); }
+          if (i < totalFiles - 1) { await new Promise(resolve => setTimeout(resolve, 800)); }
       }
+      
       const targetManga = window.mangas.find(m => m.fbId === selectedFbId);
       const now = Date.now();
-      const updatedChapters = [...(targetManga.chapters || []), { title: cTitle, pages: cloudUrls, views: 0, timestamp: now }];
-      await updateDoc(doc(db, "mangas", selectedFbId), { chapters: updatedChapters, lastUpdated: now });
-      document.getElementById('chapterTitle').value = ""; document.getElementById('chapterFiles').value = ""; document.getElementById('fileStatus').innerText = "No files selected";
+
+      // Logic: အရင်ရှိပြီးသားထဲမှာ နာမည်တူတာရှိရင် ဖြုတ်ထုတ်မယ် (Overwrite)
+      const existingChapters = targetManga.chapters || [];
+      const filteredChapters = existingChapters.filter(ch => ch.title !== cTitle);
+
+      // Chapter အသစ်ပေါင်းထည့်မယ်
+      const updatedChapters = [...filteredChapters, { 
+          title: cTitle, 
+          pages: cloudUrls, 
+          views: 0, 
+          timestamp: now 
+      }];
+
+      // Chapter List ကို နံပါတ်စဉ်အလိုက် ပြန်စီမယ် (1, 2, 3...)
+      updatedChapters.sort((a, b) => a.title.localeCompare(b.title, undefined, {numeric: true, sensitivity: 'base'}));
+
+      await updateDoc(doc(db, "mangas", selectedFbId), { 
+          chapters: updatedChapters, 
+          lastUpdated: now 
+      });
+
+      document.getElementById('chapterTitle').value = ""; 
+      document.getElementById('chapterFiles').value = ""; 
+      document.getElementById('fileStatus').innerText = "No files selected";
       showStatus(`Published ${totalFiles} pages successfully! ✅`, "success");
-    } catch(e) { showStatus("Upload Process Failed!", "fail"); } finally { btn.disabled = false; }
+    } catch(e) { 
+        console.error(e);
+        showStatus("Upload Process Failed!", "fail"); 
+    } finally { 
+        btn.disabled = false; 
+    }
   }
 
   window.deleteManga = async function(fbId) { 

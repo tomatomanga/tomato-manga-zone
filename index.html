@@ -101,7 +101,7 @@ html, body {
 /* CODE အသစ်: PREMIUM COVER BADGE (Bottom Left Inside) */
 .premium-cover-badge {
     position: absolute;
-    bottom: 45px; /* Image ရဲ့ အောက်ခြေနား (စာသားနဲ့ မလွတ်အောင် ချိန်ထားပါတယ်) */
+    bottom: 45px; 
     left: 8px;
     background: rgba(0, 0, 0, 0.65);
     backdrop-filter: blur(8px);
@@ -171,6 +171,19 @@ html, body {
   border-radius: 10px;
 }
 
+/* 300kbps OPTIMIZATION: Skeleton for reader */
+.page-item, .scroll-item {
+    min-height: 450px;
+    background: #111;
+    background-image: linear-gradient(90deg, #111 25%, #1a1a1a 50%, #111 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite linear;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 #intro { 
   position:fixed; inset:0; background:black; display:flex; 
   flex-direction:column; justify-content:center; align-items:center; 
@@ -202,7 +215,6 @@ html, body {
 
 #headerInner{ height:80px; display:flex; align-items:center; padding:0 18px; justify-content: space-between; overflow: visible; position: relative;}
 
-/* --- UPDATED SEARCH CONTAINER --- */
 #searchContainer {
   position: absolute; left: 18px; right: 80px; height: 50px;
   background: var(--card); border-radius: 15px; border: 1px solid var(--accent);
@@ -217,7 +229,6 @@ html, body {
 }
 .searchClose { color: var(--accent); font-weight: 900; cursor: pointer; padding: 5px; font-size: 20px;}
 
-/* PREMIUM SEARCH DROPDOWN LIST */
 #searchDropdown {
     position: absolute;
     top: calc(100% + 5px);
@@ -332,7 +343,6 @@ html, body {
   display: none; 
 }
 
-/* --- NEW PREMIUM TITLE STYLE --- */
 .manga-list-header {
   padding: 30px 25px 5px;
   display: flex;
@@ -473,7 +483,6 @@ html, body {
 
 .backBtn{background:var(--card);color:white;padding:12px 20px;margin: 20px;border-radius:30px;cursor:pointer;border:1px solid rgba(255,255,255,0.1); font-weight: bold; transition: 0.3s; display: inline-block;}
 
-/* --- CHAPTER LIST SECTION --- */
 .chapter-list-section {
     margin-top: 20px;
     padding: 0 20px 40px;
@@ -523,7 +532,6 @@ html, body {
     -ms-interpolation-mode: bicubic;
     transform: translateZ(0);
     will-change: transform;
-    filter: sharpness(1.05);
     width: 100%; 
     display: block; 
     height: auto;
@@ -617,7 +625,6 @@ html, body {
 .setting-choice { padding: 12px; border-radius: 8px; cursor: pointer; text-align: center; font-size: 14px; font-weight: bold; }
 .setting-choice.active { background: var(--accent); color: white; }
 
-/* --- ADMIN PANEL PREMIUM RE-DESIGN --- */
 #adminSidebar { 
     position:fixed; top:0; right:-320px; width:320px; height:100%; 
     background: #0a0a0a; backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); 
@@ -685,7 +692,6 @@ html, body {
 .del-btn { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: rgba(255,0,0,0.1); color: #ff4444; border-radius: 5px; cursor: pointer; transition: 0.2s;}
 .del-btn:hover { background: #ff0000; color: white; }
 
-/* PREMIUM TRASH ICON STYLE */
 .manga-del-btn {
   margin-left: auto; color: #ff4444; cursor: pointer; padding: 8px; border-radius: 8px;
   background: rgba(255, 68, 68, 0.1); border: 1px solid rgba(255, 68, 68, 0.2);
@@ -866,7 +872,7 @@ html, body {
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc, increment, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc, increment, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
   const _k1 = "1514f8313e";
   const _k2 = "d6947ee69bc";
@@ -887,8 +893,9 @@ html, body {
   const db = getFirestore(app);
   window.mangas = [];
   
+  let currentLimit = 6;
+  let unsubscribeManga = null;
   let shouldAnimateMangas = true;
-
   const lobbyScrollMemory = {};
 
   window.navigateTo = function(targetId) {
@@ -923,7 +930,7 @@ html, body {
   adminGenreDiv.innerHTML = genreOptions.map(g => `<label class="genre-option"><input type="checkbox" value="${g}" class="genre-checkbox"> ${g}</label>`).join('');
 
   const list = document.getElementById('mangaList');
-  list.innerHTML = Array(8).fill(0).map(() => `<div class="skeleton" style="width:100%; aspect-ratio:3/4;"></div>`).join('');
+  list.innerHTML = Array(6).fill(0).map(() => `<div class="skeleton" style="width:100%; aspect-ratio:3/4;"></div>`).join('');
   
   async function processAndUpload(file) {
       return new Promise((resolve, reject) => {
@@ -964,32 +971,40 @@ html, body {
 
   window.handleFiles = function(files) { document.getElementById('fileStatus').innerText = files.length + " pages ready."; }
 
-  // UPDATED: Sorted Query by 'lastUpdated' to bring new updates to top
-  const mangaQuery = query(collection(db, "mangas"), orderBy("lastUpdated", "desc"));
-  
-  onSnapshot(mangaQuery, (snapshot) => {
-    window.mangas = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
-    renderPublic(); renderFeatured(); renderShowcase(); renderHistory(); updateMangaSelect(); renderBookmarks();
-    if(document.getElementById('detailPage').style.display === "block" && window.currentOpenMangaFbId) {
-        openManga(window.currentOpenMangaFbId);
-    }
+  function startMangaListener() {
+      if (unsubscribeManga) unsubscribeManga();
+      const mangaQuery = query(collection(db, "mangas"), orderBy("lastUpdated", "desc"), limit(currentLimit));
+      
+      unsubscribeManga = onSnapshot(mangaQuery, (snapshot) => {
+          window.mangas = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
+          renderPublic(); renderFeatured(); renderShowcase(); renderHistory(); updateMangaSelect(); renderBookmarks();
+          if(document.getElementById('detailPage').style.display === "block" && window.currentOpenMangaFbId) {
+              openManga(window.currentOpenMangaFbId);
+          }
+      });
+  }
+
+  document.getElementById('mainContentWrapper').addEventListener('scroll', (e) => {
+      const { scrollTop, scrollHeight, clientHeight } = e.target;
+      if (scrollTop + clientHeight >= scrollHeight - 300) {
+          if (window.mangas.length >= currentLimit) {
+              currentLimit += 6;
+              startMangaListener();
+          }
+      }
   });
 
-  /* --- NEW: LIVE SEARCH LOGIC --- */
+  startMangaListener();
+
   let searchTimer;
   window.liveSearch = function(val) {
     const dropdown = document.getElementById('searchDropdown');
     clearTimeout(searchTimer);
-    
-    if(!val.trim()) {
-        dropdown.style.display = "none";
-        return;
-    }
+    if(!val.trim()) { dropdown.style.display = "none"; return; }
 
     searchTimer = setTimeout(() => {
         const queryStr = val.toLowerCase();
         const filtered = window.mangas.filter(m => m.name.toLowerCase().includes(queryStr)).slice(0, 5);
-        
         if(filtered.length > 0) {
             dropdown.innerHTML = filtered.map(m => `
                 <div class="search-item" onclick="openManga('${m.fbId}'); toggleSearch(false);">
@@ -998,8 +1013,7 @@ html, body {
                         <span class="search-item-title">${m.name}</span>
                         <span class="search-item-meta">⭐ ${m.rating || '4.9'} | ${(m.genres || ['Action'])[0]}</span>
                     </div>
-                </div>
-            `).join('');
+                </div>`).join('');
             dropdown.style.display = "flex";
         } else {
             dropdown.innerHTML = `<div style="padding:15px; text-align:center; font-size:12px; opacity:0.5;">No results found</div>`;
@@ -1029,7 +1043,7 @@ html, body {
         description: description || "No description available.", 
         chapters: [],
         uploadedAt: new Date().toLocaleString(),
-        lastUpdated: now // Initialize lastUpdated
+        lastUpdated: now 
       });
       document.getElementById('mangaTitle').value = ""; document.getElementById('mangaDesc').value = ""; imgInput.value = ""; document.querySelectorAll('.genre-checkbox').forEach(cb => cb.checked = false);
       showStatus("Success! ✨","success");
@@ -1056,27 +1070,14 @@ html, body {
       const targetManga = window.mangas.find(m => m.fbId === selectedFbId);
       const now = Date.now();
       const updatedChapters = [...(targetManga.chapters || []), { title: cTitle, pages: cloudUrls, views: 0, timestamp: now }];
-      
-      // UPDATED: Update chapters AND lastUpdated timestamp to trigger sorting
-      await updateDoc(doc(db, "mangas", selectedFbId), { 
-        chapters: updatedChapters,
-        lastUpdated: now 
-      });
-
-      document.getElementById('chapterTitle').value = ""; 
-      document.getElementById('chapterFiles').value = "";
-      document.getElementById('fileStatus').innerText = "No files selected";
+      await updateDoc(doc(db, "mangas", selectedFbId), { chapters: updatedChapters, lastUpdated: now });
+      document.getElementById('chapterTitle').value = ""; document.getElementById('chapterFiles').value = ""; document.getElementById('fileStatus').innerText = "No files selected";
       showStatus(`Published ${totalFiles} pages successfully! ✅`, "success");
     } catch(e) { showStatus("Upload Process Failed!", "fail"); } finally { btn.disabled = false; }
   }
 
-  /* INSTANT DELETE - NO CONFIRMATION */
   window.deleteManga = async function(fbId) { 
-    try { 
-      showStatus("Removing Manga...", "success");
-      await deleteDoc(doc(db, "mangas", fbId)); 
-      showStatus("Removed! ✨", "success"); 
-    } catch(e) { showStatus("Error", "fail"); } 
+    try { showStatus("Removing Manga...", "success"); await deleteDoc(doc(db, "mangas", fbId)); showStatus("Removed! ✨", "success"); } catch(e) { showStatus("Error", "fail"); } 
   }
 
   window.deleteChapter = async function(mId, idx) { 
@@ -1149,22 +1150,18 @@ html, body {
   function showStatus(t,type){ const s = document.getElementById('uploadStatus'); s.innerText=t; s.className=type+" show"; setTimeout(()=>s.className="",3000); }
   function updateMangaSelect(){ document.getElementById('mangaSelect').innerHTML = window.mangas.map(m => `<option value="${m.fbId}">${m.name}</option>`).join(''); }
 
-  // NEW: Logic to check if badge should be shown (within 24 hours)
   function shouldShowNewBadge(manga) {
       if (!manga.chapters || manga.chapters.length === 0) return false;
       const latestChapter = manga.chapters[manga.chapters.length - 1];
       if (!latestChapter.timestamp) return false;
       const now = Date.now();
-      const diff = now - latestChapter.timestamp;
-      return diff < (24 * 60 * 60 * 1000);
+      return (now - latestChapter.timestamp) < (24 * 60 * 60 * 1000);
   }
 
-  // CODE အသစ်: Cover အသစ်တင်ထားတာ ၂၄ နာရီ ရှိ၊ မရှိ စစ်ဆေးခြင်း
   function isNewCover(manga) {
       if (!manga.lastUpdated) return false;
       const now = Date.now();
-      const diff = now - manga.lastUpdated;
-      return diff < (24 * 60 * 60 * 1000); // 24 hours
+      return (now - manga.lastUpdated) < (24 * 60 * 60 * 1000);
   }
 
   function renderPublic(){
@@ -1172,12 +1169,10 @@ html, body {
     document.getElementById('mangaList').innerHTML = window.mangas.map((m, i) => {
       const animClass = shouldAnimateMangas ? 'animate' : '';
       const delay = shouldAnimateMangas ? `style="animation-delay: ${0.8 + (i * 0.05)}s"` : '';
-      const showUpdateBadge = shouldShowNewBadge(m);
-      const showNewCoverBadge = isNewCover(m); // CODE အသစ်
       return `
       <div class="manga ${animClass}" onclick="openManga('${m.fbId}')" ${delay}>
-        ${showUpdateBadge ? '<div class="new-chapter-badge">New Chapter Update</div>' : ''}
-        ${showNewCoverBadge ? '<div class="premium-cover-badge">New</div>' : ''}
+        ${shouldShowNewBadge(m) ? '<div class="new-chapter-badge">New Chapter Update</div>' : ''}
+        ${isNewCover(m) ? '<div class="premium-cover-badge">New</div>' : ''}
         <img src="${m.img}" loading="lazy"><p>${m.name}</p>
       </div>`;
     }).join('');
@@ -1274,38 +1269,30 @@ html, body {
   window.openManga = function(fbId){
     if (isDown) return;
     localStorage.setItem('currentOpenMangaFbId', fbId);
-    const isInBookmark = document.getElementById('bookmarkPage').style.display === "block";
-    sessionStorage.setItem('active_lobby_source', isInBookmark ? 'bookmark' : 'main');
+    sessionStorage.setItem('active_lobby_source', document.getElementById('bookmarkPage').style.display === "block" ? 'bookmark' : 'main');
     window.currentOpenMangaFbId = fbId;
     const m = window.mangas.find(x => x.fbId === fbId);
     if(!m) return;
     navigateTo('detailPage');
     const genresHtml = (m.genres || ["Action"]).map(g => `<span class="genre-tag">${g}</span>`).join('');
-    const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || "[]");
-    const isBookmarked = bookmarks.includes(fbId);
+    const isBookmarked = JSON.parse(localStorage.getItem('bookmarks') || "[]").includes(fbId);
     document.getElementById('lobbyInfo').innerHTML = `
       <div class="lobby-top">
-          <div class="lobby-left">
-            <img src="${m.img}" alt="cover"><h2 class="manga-title">${m.name}</h2>
-          </div>
+          <div class="lobby-left"><img src="${m.img}"><h2 class="manga-title">${m.name}</h2></div>
           <div class="lobby-right">
             <div class="manga-rating">⭐ ${m.rating || '4.9'}</div>
             <div class="manga-genres">${genresHtml}</div>
             <button class="bookmark-toggle-btn ${isBookmarked ? 'active' : ''}" onclick="toggleBookmark('${fbId}')">${isBookmarked ? '✓ BOOKMARKED' : '+ ADD BOOKMARK'}</button>
           </div>
       </div>
-      <div class="manga-title-wrap"><div class="manga-description">${m.description || 'No description available for this manga.'}</div></div>
-    `;
+      <div class="manga-title-wrap"><div class="manga-description">${m.description || 'No description available.'}</div></div>`;
     let html = "";
     if(!m.chapters || m.chapters.length === 0) html = "<p style='text-align:center; opacity:0.3; padding:50px;'>NO CHAPTERS YET</p>";
     else {
       m.chapters.forEach((ch, idx) => {
-        const readClass = isChapterRead(fbId, idx) ? 'read' : '';
-        const viewCount = ch.views || 0;
         html += `
-          <div class="chapter-item ${readClass}" onclick="openReadingLobby('${fbId}', ${idx})">
-            <span>${ch.title}</span>
-            <div class="view-count"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" opacity="0.7"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg> ${viewCount}</div>
+          <div class="chapter-item ${isChapterRead(fbId, idx) ? 'read' : ''}" onclick="openReadingLobby('${fbId}', ${idx})">
+            <span>${ch.title}</span><div class="view-count"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" opacity="0.7"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg> ${ch.views || 0}</div>
           </div>`;
       });
     }
@@ -1328,40 +1315,42 @@ html, body {
       totalPages = ch.pages.length;
       currentPageIndex = 0;
       renderPages(ch.pages);
-      let popHtml = m.chapters.map((c, i) => `<div class="chapter-option-item" onclick="openReadingLobby('${fbId}', ${i}); toggleChapterPopup();">${c.title}</div>`).join('');
-      document.getElementById('popupChapterList').innerHTML = popHtml;
-      const backBtn = document.getElementById('backToDetailBtn');
+      document.getElementById('popupChapterList').innerHTML = m.chapters.map((c, i) => `<div class="chapter-option-item" onclick="openReadingLobby('${fbId}', ${i}); toggleChapterPopup();">${c.title}</div>`).join('');
+      document.getElementById('backToDetailBtn').onclick = () => closeReadingLobby();
       const nextBtn = document.getElementById('nextChapterBtn');
-      backBtn.onclick = () => { closeReadingLobby(); };
-      if(chIdx + 1 < m.chapters.length) {
-          nextBtn.disabled = false;
-          nextBtn.innerText = "Next";
-          nextBtn.onclick = () => openReadingLobby(fbId, chIdx + 1);
-      } else {
-          nextBtn.disabled = true;
-          nextBtn.innerText = "End";
-      }
+      if(chIdx + 1 < m.chapters.length) { nextBtn.disabled = false; nextBtn.innerText = "Next"; nextBtn.onclick = () => openReadingLobby(fbId, chIdx + 1); } 
+      else { nextBtn.disabled = true; nextBtn.innerText = "End"; }
       applyReadMode();
   }
 
-  function renderPages(pages) {
+  // --- 300kbps ULTRA OPTIMIZATION: SEQUENTIAL LOADING ---
+  async function renderPages(pages) {
       const container = document.getElementById('pagesContainer');
       container.innerHTML = ''; 
-      pages.forEach((p, index) => {
+      
+      for (let i = 0; i < pages.length; i++) {
+          const div = document.createElement('div');
+          div.className = (currentReadMode === 'page') ? 'page-item' : 'scroll-item';
+          
           const img = document.createElement('img');
-          if (index > 2) img.loading = "lazy";
-          img.src = p;
-          img.style.opacity = "0"; 
-          img.style.transition = "opacity 0.4s ease-in"; 
-          img.onload = () => { img.style.opacity = "1"; };
-          if(currentReadMode === 'scroll') { container.appendChild(img); } 
-          else {
-              const pageDiv = document.createElement('div');
-              pageDiv.className = 'page-item';
-              pageDiv.appendChild(img);
-              container.appendChild(pageDiv);
-          }
-      });
+          img.style.opacity = "0";
+          img.style.transition = "opacity 0.6s ease-in";
+          
+          // Optimization: Lazy load for high index
+          if (i > 2) { img.loading = "lazy"; }
+          
+          img.src = pages[i];
+          
+          img.onload = () => {
+              img.style.opacity = "1";
+          };
+          
+          div.appendChild(img);
+          container.appendChild(div);
+
+          // sequential wait to save bandwidth at the beginning
+          if (i < 2) await new Promise(r => setTimeout(r, 400));
+      }
       container.style.transform = (currentReadMode === 'scroll') ? `none` : `translateX(0)`;
   }
 
@@ -1371,42 +1360,34 @@ html, body {
       document.getElementById('modePage').classList.toggle('active', mode === 'page');
       document.getElementById('settingsPopup').style.display = 'none';
       const m = window.mangas.find(x => x.fbId === window.currentOpenMangaFbId);
-      const titleClean = document.getElementById('readingTitle').innerText.replace(" ▾", "");
-      const chIdx = m.chapters.findIndex(c => c.title === titleClean);
-      applyReadMode();
-      renderPages(m.chapters[chIdx].pages);
+      const chIdx = localStorage.getItem('currentReadChapterIdx');
+      if (chIdx !== null && m.chapters[chIdx]) {
+          applyReadMode(); renderPages(m.chapters[chIdx].pages);
+      }
   };
 
   function applyReadMode() {
       const lobby = document.getElementById('readingLobby');
       if(currentReadMode === 'page') { lobby.classList.add('page-mode'); initPageTouchEvents(); } 
-      else {
-          lobby.classList.remove('page-mode');
-          const container = document.getElementById('pagesContainer');
-          container.ontouchstart = null; container.ontouchmove = null; container.ontouchend = null; container.onclick = null;
-      }
+      else { lobby.classList.remove('page-mode'); const c = document.getElementById('pagesContainer'); c.ontouchstart = null; c.ontouchmove = null; c.ontouchend = null; c.onclick = null; }
   }
 
   function initPageTouchEvents() {
       const container = document.getElementById('pagesContainer');
-      let touchStartX = 0; let touchStartY = 0; let isMoving = false;
+      let touchStartX = 0, touchStartY = 0, isMoving = false;
       container.ontouchstart = e => { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; isMoving = true; container.style.transition = 'none'; };
       container.ontouchmove = e => {
           if (!isMoving) return;
-          const currentX = e.touches[0].clientX; const currentY = e.touches[0].clientY;
+          const currentX = e.touches[0].clientX, currentY = e.touches[0].clientY;
           if (Math.abs(currentX - touchStartX) > Math.abs(currentY - touchStartY)) {
-            const diff = currentX - touchStartX;
-            const offset = -(currentPageIndex * window.innerWidth) + diff;
-            container.style.transform = `translateX(${offset}px)`;
+            container.style.transform = `translateX(${-(currentPageIndex * window.innerWidth) + (currentX - touchStartX)}px)`;
             e.preventDefault();
           }
       };
       container.ontouchend = e => {
-          if (!isMoving) return;
-          isMoving = false;
+          if (!isMoving) return; isMoving = false;
           container.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
-          const touchEndX = e.changedTouches[0].clientX;
-          const diff = touchStartX - touchEndX;
+          const diff = touchStartX - e.changedTouches[0].clientX;
           if (Math.abs(diff) > window.innerWidth / 10) { 
               if (diff > 0 && currentPageIndex < totalPages - 1) currentPageIndex++;
               else if (diff < 0 && currentPageIndex > 0) currentPageIndex--;
@@ -1415,9 +1396,8 @@ html, body {
       };
       container.onclick = (e) => {
         if(currentReadMode !== 'page') return;
-        const width = window.innerWidth;
-        if(e.clientX > width * 0.65 && currentPageIndex < totalPages - 1) { currentPageIndex++; } 
-        else if(e.clientX < width * 0.35 && currentPageIndex > 0) { currentPageIndex--; }
+        if(e.clientX > window.innerWidth * 0.65 && currentPageIndex < totalPages - 1) currentPageIndex++;
+        else if(e.clientX < window.innerWidth * 0.35 && currentPageIndex > 0) currentPageIndex--;
         container.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
         container.style.transform = `translateX(-${currentPageIndex * 100}vw)`;
       };
@@ -1430,8 +1410,7 @@ html, body {
   window.closeDetail = () => { 
     localStorage.removeItem('currentOpenMangaFbId');
     const source = sessionStorage.getItem('active_lobby_source') || 'main';
-    const target = (source === 'bookmark') ? 'bookmarkPage' : 'mainContentWrapper';
-    navigateTo(target);
+    navigateTo(source === 'bookmark' ? 'bookmarkPage' : 'mainContentWrapper');
     if(source !== 'bookmark') renderPublic();
   }
 
@@ -1439,8 +1418,7 @@ html, body {
     let b = JSON.parse(localStorage.getItem('bookmarks') || "[]");
     if(b.includes(fbId)) { b = b.filter(id => id !== fbId); showStatus("Removed", "fail"); }
     else { b.push(fbId); showStatus("Added! ❤️", "success"); }
-    localStorage.setItem('bookmarks', JSON.stringify(b)); 
-    openManga(fbId); renderBookmarks();
+    localStorage.setItem('bookmarks', JSON.stringify(b)); openManga(fbId); renderBookmarks();
   }
   
   window.openBookmarkLobby = function() { document.getElementById('adminSidebar').classList.remove('show'); navigateTo('bookmarkPage'); renderBookmarks(); }
@@ -1450,17 +1428,12 @@ html, body {
     const b = JSON.parse(localStorage.getItem('bookmarks') || "[]");
     const container = document.getElementById('bookmarkList');
     if(b.length === 0) { container.innerHTML = "<p style='grid-column: 1/-1; text-align:center; opacity:0.4; padding:50px;'>No bookmarks yet.</p>"; return; }
-    const bm = window.mangas.filter(m => b.includes(m.fbId));
-    container.innerHTML = bm.map(m => {
-        const showNewCoverBadge = isNewCover(m); // CODE အသစ်
-        const showUpdateBadge = shouldShowNewBadge(m);
-        return `
+    container.innerHTML = window.mangas.filter(m => b.includes(m.fbId)).map(m => `
         <div class="manga" onclick="openManga('${m.fbId}')">
-            ${showUpdateBadge ? '<div class="new-chapter-badge">New Chapter Update</div>' : ''}
-            ${showNewCoverBadge ? '<div class="premium-cover-badge">New</div>' : ''}
+            ${shouldShowNewBadge(m) ? '<div class="new-chapter-badge">New Chapter Update</div>' : ''}
+            ${isNewCover(m) ? '<div class="premium-cover-badge">New</div>' : ''}
             <img src="${m.img}" loading="lazy"><p>${m.name}</p>
-        </div>`;
-    }).join('');
+        </div>`).join('');
   }
 </script>
 </body>

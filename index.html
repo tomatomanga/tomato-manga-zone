@@ -58,30 +58,7 @@ html, body {
   contain-intrinsic-size: 500px;
 }
 
-/* --- PRO BREADCRUMB STYLE (FIXED POSITION) --- */
-#breadcrumb-bar {
-    background: rgba(255, 255, 255, 0.03);
-    padding: 10px 18px;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    display: flex;
-    gap: 8px;
-    color: #888;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    white-space: nowrap;
-    overflow-x: auto;
-    position: sticky; 
-    top: 80px; 
-    width: 100%; 
-    z-index: 1999;
-}
-#breadcrumb-bar::-webkit-scrollbar { display: none; }
-.bc-item { cursor: pointer; transition: 0.3s; color: #666; }
-.bc-item:hover { color: var(--accent); }
-.bc-active { color: var(--text); }
-.bc-sep { opacity: 0.3; }
+/* (အချက် ၁ - Breadcrumb Bar CSS ကို ဖယ်ထုတ်လိုက်သည်) */
 
 /* --- PREMIUM CINEMATIC ANIMATIONS --- */
 @keyframes lobbyEntrance {
@@ -94,13 +71,11 @@ html, body {
   100% { opacity: 0; transform: scale(1.05) translateY(-30px); filter: blur(10px); }
 }
 
-/* Default Manga Blur Animation */
 @keyframes mangaBlurFade {
   0% { opacity: 0; filter: blur(10px); transform: translateY(0); }
   100% { opacity: 1; filter: blur(0px); transform: translateY(0); }
 }
 
-/* Special Slide Up Animation for Intro */
 @keyframes mangaSlideUp {
   0% { opacity: 0; transform: translateY(40px); }
   100% { opacity: 1; transform: translateY(0); }
@@ -255,7 +230,6 @@ html, body {
 }
 #intro.fade-out { animation: doorOpen 0.8s forwards; pointer-events: none; }
 
-/* --- INTRO TITLE FIX (CENTERED) --- */
 #intro h1 { 
   color: #ff0000; 
   font-family: 'Cinzel', serif;
@@ -295,9 +269,12 @@ html, body {
 }
 #intro button:hover { background: var(--accent); color: white; }
 
-#introBg{ position:absolute; inset:-40%; display:grid; grid-template-columns:repeat(auto-fill,160px); gap:18px; opacity:.3; filter:grayscale(100%); animation:introMove 90s linear infinite; z-index:1; }
-#introBg svg{width:160px;height:220px;border-radius:6px}
-@keyframes introMove{ from{transform:translate(0,0)} to{transform:translate(-600px,-500px)} }
+/* (အချက် ၂ - Intro Background Loop CSS ကို ဖယ်ထုတ်လိုက်ပြီး Clean Gradient သုံးသည်) */
+#introBg { 
+    position:absolute; inset:0; 
+    background: radial-gradient(circle at center, #220000 0%, #000 100%);
+    z-index:1; 
+}
 
 #mainContentWrapper { display: none; opacity: 0; }
 #mainContentWrapper.animate-in { display: block; animation: lobbyEntrance 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
@@ -383,7 +360,6 @@ html, body {
 }
 #headerCenter.hide { opacity: 0; transform: scale(0.8); pointer-events: none;}
 
-/* Premium All-Red Header Logo */
 .logo-main {
   font-family: 'Cinzel', serif;
   font-size: 18px; font-weight: 900; letter-spacing: 2px;
@@ -557,7 +533,6 @@ html, body {
 
 .manga-title-wrap { margin-top: 10px; display: flex; flex-direction: column; align-items: flex-start; }
 
-/* Detail Page Title Style */
 .manga-title {
   width: 100%; 
   font-family: 'Cinzel', serif;
@@ -884,10 +859,6 @@ input:checked + .slider:before { transform: translateX(20px); }
   <button onclick="enterSite()">START READING</button>
 </div>
 
-<div id="breadcrumb-bar" style="display:none;">
-    <span class="bc-item" onclick="navigateTo('mainContentWrapper')">HOME</span>
-</div>
-
 <div id="mainContentWrapper" class="app-lobby">
     <div id="mainHeader">
       <div id="headerInner">
@@ -1038,7 +1009,7 @@ input:checked + .slider:before { transform: translateX(20px); }
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc, increment, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  // --- 🛡️ GUARDIAN SYSTEM (MALWARE & VIRUS PROTECTION) ---
+  // --- 🛡️ GUARDIAN SYSTEM (အချက် ၅ - IronWall Blur ကို ဖယ်ရှားလိုက်သည်) ---
   
   document.addEventListener('contextmenu', e => e.preventDefault());
   document.onkeydown = function(e) {
@@ -1047,32 +1018,11 @@ input:checked + .slider:before { transform: translateX(20px); }
       if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
   };
 
-  const ironWall = {
-      on: () => {
-          document.body.style.filter = "blur(100px) grayscale(100%)";
-          document.body.style.pointerEvents = "none";
-      },
-      off: () => {
-          document.body.style.filter = "none";
-          document.body.style.pointerEvents = "auto";
-      }
-  };
-
-  window.addEventListener('blur', ironWall.on);
-  window.addEventListener('focus', ironWall.off);
-  document.addEventListener('visibilitychange', () => {
-      if (document.hidden) ironWall.on();
-      else setTimeout(ironWall.off, 500);
-  });
-
-  window.addEventListener('touchstart', ironWall.off);
-
+  // Screenshot protection ကိုတော့ ချန်ထားခဲ့သည် (အချက် ၄ အရ)
   document.addEventListener('keyup', (e) => {
     if (e.key == 'PrintScreen') {
-        ironWall.on();
         navigator.clipboard.writeText('Security Alert: Content Protected!');
         alert('Screenshots are prohibited! 🛡️');
-        setTimeout(ironWall.off, 1500);
     }
   });
 
@@ -1158,19 +1108,7 @@ input:checked + .slider:before { transform: translateX(20px); }
   let isFirstLoadFromIntro = false;
   const lobbyScrollMemory = {};
   
-  function updateBreadcrumbs(pathArray) {
-      const bar = document.getElementById('breadcrumb-bar');
-      if (!bar) return;
-      let html = `<span class="bc-item" onclick="navigateTo('mainContentWrapper')">HOME</span>`;
-      pathArray.forEach((item, idx) => {
-          html += `<span class="bc-sep">/</span>`;
-          const isLast = idx === pathArray.length - 1;
-          html += `<span class="bc-item ${isLast ? 'bc-active' : ''}" onclick="${item.action}">${item.name}</span>`;
-      });
-      bar.innerHTML = html;
-      bar.style.display = (pathArray.length > 0) ? 'flex' : 'none';
-  }
-
+  // (အချက် ၁ - Breadcrumb Update Logic ကို ဖယ်ထုတ်လိုက်သည်)
   window.navigateTo = function(targetId, updateHistory = true) {
     if (!targetId) return;
     if (updateHistory) { history.pushState({ lobbyId: targetId }, "", ""); }
@@ -1190,11 +1128,7 @@ input:checked + .slider:before { transform: translateX(20px); }
       const savedPos = lobbyScrollMemory[targetId] || 0;
       if(targetId === 'mainContentWrapper') { 
           shouldAnimateMangas = true; 
-          updateBreadcrumbs([]); 
           renderPublic(); 
-      }
-      else if(targetId === 'bookmarkPage') {
-          updateBreadcrumbs([{ name: 'BOOKMARKS', action: 'navigateTo("bookmarkPage")' }]);
       }
       setTimeout(() => { target.scrollTop = savedPos; }, 10);
     }
@@ -1267,8 +1201,7 @@ input:checked + .slider:before { transform: translateX(20px); }
       } catch (e) { throw e; }
   }
 
-  const introBg = document.getElementById('introBg');
-  for(let i=0;i<42;i++){ introBg.innerHTML+=`<svg viewBox="0 0 160 220"><rect width="160" height="220" fill="#111"/><rect x="10" y="10" width="140" height="60" fill="#000"/><rect x="10" y="80" width="60" height="50" fill="#000"/><rect x="80" y="80" width="70" height="120" fill="#000"/></svg>`; }
+  // (အချက် ၂ - Intro Background Loop Logic ကို ဖယ်ထုတ်လိုက်သည်)
 
   window.handleFiles = function(files) { document.getElementById('fileStatus').innerText = files.length + " pages ready."; }
 
@@ -1332,7 +1265,6 @@ input:checked + .slider:before { transform: translateX(20px); }
     btn.disabled = false;
   }
 
-  /* --- 🚀 ULTRA FAST 1s 6-IMAGE BATCH UPLOAD SYSTEM --- */
   window.uploadChapter = async function() {
     const selectedFbId = document.getElementById('mangaSelect').value;
     const cTitle = document.getElementById('chapterTitle').value;
@@ -1343,7 +1275,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     
     btn.disabled = true; 
     let cloudUrls = [];
-    const batchSize = 6; // ၁ စက္ကန့်မှာ ၆ ပုံနှုန်း
+    const batchSize = 6; 
 
     try {
       showStatus(`Starting Fast Upload... ⚡`, "success");
@@ -1351,14 +1283,9 @@ input:checked + .slider:before { transform: translateX(20px); }
       for (let i = 0; i < files.length; i += batchSize) {
           const currentBatch = files.slice(i, i + batchSize);
           showStatus(`Uploading Batch: ${Math.floor(i/batchSize) + 1} 🚀`, "success");
-
-          // ၆ ပုံလုံးကို တစ်ပြိုင်နက် ပို့လိုက်မယ် (Parallel)
           const batchPromises = currentBatch.map(file => processAndUpload(file));
           const results = await Promise.all(batchPromises);
-          
           cloudUrls = [...cloudUrls, ...results];
-
-          // ပုံတွေကျန်သေးရင် နောက်ထပ် Batch မပို့ခင် ၁ စက္ကန့် စောင့်မယ်
           if (i + batchSize < files.length) {
               await new Promise(resolve => setTimeout(resolve, 1000));
           }
@@ -1594,7 +1521,6 @@ input:checked + .slider:before { transform: translateX(20px); }
     const m = window.mangas.find(x => x.fbId === fbId); if(!m) return;
     isFirstLoadFromIntro = false;
     window.navigateTo('detailPage');
-    updateBreadcrumbs([{ name: m.name, action: `openManga('${fbId}')` }]);
     const genresHtml = (m.genres || ["Action"]).map(g => `<span class="genre-tag">${g}</span>`).join('');
     const isBookmarked = JSON.parse(localStorage.getItem('bookmarks') || "[]").includes(fbId);
     document.getElementById('lobbyInfo').innerHTML = `
@@ -1629,28 +1555,17 @@ input:checked + .slider:before { transform: translateX(20px); }
   window.openReadingLobby = function(fbId, chIdx) {
       const m = window.mangas.find(x => x.fbId === fbId); 
       if(!m || !m.chapters[chIdx]) return;
-
       const ch = m.chapters[chIdx];
-
       localStorage.setItem('currentReadChapterIdx', chIdx);
       isFirstLoadFromIntro = false;
       window.navigateTo('readingLobby');
-      
       document.getElementById('readingTitle').innerText = ch.title;
-      updateBreadcrumbs([
-          { name: m.name, action: `openManga('${fbId}')` }, 
-          { name: ch.title, action: `openReadingLobby('${fbId}', ${chIdx})` }
-      ]);
-
       markChapterReadAndCount(fbId, chIdx);
-
       totalPages = ch.pages.length; 
       currentPageIndex = 0;
-      
       document.getElementById('sidebarChapterList').innerHTML = m.chapters.map((c, i) => 
           `<div class="sidebar-chapter-opt ${i === chIdx ? 'active' : ''}" onclick="openReadingLobby('${fbId}', ${i}); manualCloseSidebar();">${c.title}</div>`
       ).join('');
-
       const nextBtn = document.getElementById('nextChapterBtn');
       if(chIdx + 1 < m.chapters.length) { 
           nextBtn.disabled = false; 
@@ -1660,12 +1575,10 @@ input:checked + .slider:before { transform: translateX(20px); }
           nextBtn.disabled = true; 
           nextBtn.innerText = "End"; 
       }
-
       const hbToggle = document.getElementById('headbar-toggle');
       const savedStatus = localStorage.getItem('headBarStatus') !== 'off';
       hbToggle.checked = savedStatus; 
       applyHeadBarSetting(savedStatus);
-
       applyReadMode(); 
       renderPagesSequentially(ch.pages);
   }

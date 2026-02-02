@@ -504,8 +504,7 @@ html, body {
     letter-spacing: 1px;
     text-transform: uppercase;
     display: flex;
-    align-items: center;
-    gap: 10px;
+    align-items: center; gap: 10px;
 }
 .chapter-item {
     background: var(--card);
@@ -559,14 +558,14 @@ html, body {
     flex-direction: column; 
     width: 100%; 
     will-change: transform;
-    transition: margin-top 0.3s ease; /* Head bar hide animation smooth ဖြစ်ဖို့ */
+    transition: margin-top 0.3s ease;
 }
 
 #readingLobby.page-mode #pagesContainer {
     flex-direction: row;
     height: 100vh;
     transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-    margin-top: 0 !important; /* Page mode မှာ margin မလိုဘူး */
+    margin-top: 0 !important;
 }
 #readingLobby.page-mode .page-item {
     min-width: 100vw;
@@ -592,9 +591,8 @@ html, body {
     position: fixed; top: 0; width: 100%; background: rgba(0,0,0,0.8);
     backdrop-filter: blur(10px); padding: 15px; z-index: 6100;
     display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1);
-    transition: transform 0.3s ease; /* Slide animation */
+    transition: transform 0.3s ease;
 }
-/* Head bar ပျောက်သွားတဲ့အခါသုံးမယ့် class */
 .reading-header.hidden {
     transform: translateY(-100%);
 }
@@ -745,10 +743,46 @@ input:checked + .slider:before { transform: translateX(20px); }
 .bookmark-btn-sidebar:active { transform: scale(0.95); background: var(--accent); }
 .bookmark-icon-wrap { width: 35px; height: 35px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
+/* --- PREMIUM TOAST NOTIFICATION (INFINITY NOFI) --- */
+.toast-msg {
+    visibility: hidden;
+    white-space: nowrap; /* စာသားကို လုံးဝ (လုံးဝ) အောက်ကြောင်းမဆင်းစေရ */
+    min-width: fit-content;
+    background-color: rgba(15, 15, 15, 0.98);
+    color: #ffffff;
+    text-align: center;
+    border-radius: 4px;
+    padding: 15px 35px;
+    position: fixed;
+    z-index: 20000; /* အပေါ်ဆုံးမှာ အမြဲရှိနေစေရန် */
+    left: 50%;
+    bottom: 80px;
+    transform: translateX(-50%);
+    font-size: 16px;
+    font-weight: bold;
+    border-left: 5px solid #ffd700; /* Premium ဖြစ်အောင် ရွှေရောင်ဘေးလိုင်းလေး */
+    box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    opacity: 0;
+}
+
+/* Nofi ပြတိုင်း တုန်ခါပြီး အသစ်ဖြစ်နေစေမည့် Animation */
+.toast-msg.show {
+    visibility: visible;
+    opacity: 1;
+    animation: infinityPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes infinityPop {
+    0% { transform: translateX(-50%) scale(0.8); opacity: 0; }
+    100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
 </style>
 </head>
 
 <body>
+
+<div id="toastBox" class="toast-msg"></div>
 
 <div id="intro">
   <div id="introBg"></div>
@@ -967,7 +1001,6 @@ input:checked + .slider:before { transform: translateX(20px); }
   }
   // --- SECURITY SYSTEM END ---
 
-  // CLOUDINARY CONFIG
   const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dxbelpram/image/upload";
   const UPLOAD_PRESET = "manga_upload";
 
@@ -985,25 +1018,27 @@ input:checked + .slider:before { transform: translateX(20px); }
   const db = getFirestore(app);
   window.mangas = [];
   
-  // INFINITE SCROLL SETTINGS
   let currentLimit = 6;
   let unsubscribeManga = null;
   let shouldAnimateMangas = true;
   const lobbyScrollMemory = {};
 
-  // --- GLOBAL NAVIGATION CONTROLLER (BACK BUTTON FIX) ---
+  // --- [GLOBAL NAVIGATION CONTROLLER - AUTO BACK FIX] ---
   window.navigateTo = function(targetId) {
-    localStorage.setItem('activeLobbyId', targetId);
+    if (!targetId) return;
     
-    // BACK BUTTON LOGIC: History ထဲမှာ State တစ်ခု တိုးပေးမယ်
-    history.pushState({ lobbyId: targetId }, "");
+    history.pushState({ lobbyId: targetId }, "", "");
+    localStorage.setItem('activeLobbyId', targetId);
 
     const allLobbies = document.querySelectorAll('.app-lobby');
-    const currentLobby = Array.from(allLobbies).find(l => getComputedStyle(l).display === 'block');
-    if (currentLobby) {
-      lobbyScrollMemory[currentLobby.id] = currentLobby.scrollTop;
-      currentLobby.style.display = 'none';
-    }
+    
+    allLobbies.forEach(l => {
+      if (getComputedStyle(l).display === 'block') {
+        lobbyScrollMemory[l.id] = l.scrollTop;
+        l.style.display = 'none';
+      }
+    });
+
     const target = document.getElementById(targetId);
     if (target) {
       target.style.display = 'block';
@@ -1013,38 +1048,54 @@ input:checked + .slider:before { transform: translateX(20px); }
     }
   };
 
-  // BACK BUTTON INTERCEPTION - အလိုအလျောက် အဆင့်ဆင့် ပြန်သွားပေးမည့် Logic
+  // --- [INFINITY NOFI & BLOCK SYSTEM] ---
+  window.showToast = function(message) {
+      const toast = document.getElementById("toastBox");
+      
+      // အရင်ပြနေတဲ့ Nofi ရှိရင် ဖျက်ချပြီး အသစ်ပြန်ပြမယ် (Repeatable ဖြစ်အောင်)
+      toast.classList.remove("show");
+      void toast.offsetWidth; // Animation ကို Reset လုပ်ဖို့ Force reflow လုပ်တာပါ
+
+      toast.innerText = message;
+      toast.classList.add("show");
+      
+      // ၂ စက္ကန့်ကြာရင် ပြန်ဖျောက်မယ်
+      if (window.toastTimer) clearTimeout(window.toastTimer);
+      window.toastTimer = setTimeout(() => {
+          toast.classList.remove("show");
+      }, 2000);
+  }
+
+  // [BACK BUTTON INTERCEPTION - STRICT SIDEBAR MODE]
   window.onpopstate = function(event) {
-    // ၁။ Sidebar (Menu) ပွင့်နေရင် Sidebar ကိုပဲ အရင်ပိတ်မယ်
     const readingSidebar = document.getElementById('readingSettingsSidebar');
     const adminSidebar = document.getElementById('adminSidebar');
     
-    if (readingSidebar && readingSidebar.classList.contains('show')) {
-        readingSidebar.classList.remove('show');
-        history.pushState({ lobbyId: 'readingLobby' }, ""); // Web ထဲကနေ မထွက်အောင် History ကို ပြန်ထိန်းမယ်
-        return;
-    }
-    
-    if (adminSidebar && adminSidebar.classList.contains('show')) {
-        adminSidebar.classList.remove('show');
-        history.pushState({ lobbyId: 'mainContentWrapper' }, "");
+    // Sidebar တွေပွင့်နေရင် Back ကို လုံးဝ ပိတ်ထားမယ်
+    if ((readingSidebar && readingSidebar.classList.contains('show')) || 
+        (adminSidebar && adminSidebar.classList.contains('show'))) {
+        
+        // [BLOCK] History ကို လက်ရှိမှာပဲ အတင်း ပြန်ထိန်းထားမယ်
+        history.pushState(event.state, "", ""); 
+        
+        // [INFINITY NOFI] အကြိမ် ၁၀၀ နှိပ်ရင် ၁၀၀ လုံး ပြမယ်
+        showToast("Close Menu ဖြင့်ထွက်ပေးပါ"); 
         return;
     }
 
-    // ၂။ Lobby အဆင့်ဆင့်အတိုင်း နောက်ပြန်သွားမယ် (Intro > Main > Detail > Reading)
-    const activeLobby = localStorage.getItem('activeLobbyId');
-    
-    if (activeLobby === 'readingLobby') {
-        // Reading mode ကနေ Back နှိပ်ရင် Detail Page ကို ပြန်သွားမယ်
-        closeReadingLobby();
-    } else if (activeLobby === 'detailPage') {
-        // Detail Page ကနေ Back နှိပ်ရင် Main Lobby ကို ပြန်သွားမယ်
-        closeDetail();
-    } else if (activeLobby === 'bookmarkPage') {
-        // Bookmark ကနေ Back နှိပ်ရင် Main ကို ပြန်သွားမယ်
-        closeBookmarkLobby();
-    } else if (activeLobby === 'mainContentWrapper') {
-        // Main Lobby မှာ ရှိနေရင်တော့ ဖုန်း Back နှိပ်ရင် Browser ထဲကနေ တကယ်ထွက်သွားမယ် (ဒါမှမဟုတ် confirm ပြလို့ရတယ်)
+    // ၂။ History State ရှိရင် သက်ဆိုင်ရာ Lobby ကို ပြမယ်
+    if (event.state && event.state.lobbyId) {
+        const targetId = event.state.lobbyId;
+        document.querySelectorAll('.app-lobby').forEach(l => l.style.display = 'none');
+        const target = document.getElementById(targetId);
+        if (target) {
+            target.style.display = 'block';
+            localStorage.setItem('activeLobbyId', targetId);
+        }
+    } else {
+        document.querySelectorAll('.app-lobby').forEach(l => l.style.display = 'none');
+        document.getElementById('mainContentWrapper').style.display = 'block';
+        localStorage.setItem('activeLobbyId', 'mainContentWrapper');
     }
   };
 
@@ -1060,7 +1111,6 @@ input:checked + .slider:before { transform: translateX(20px); }
   const list = document.getElementById('mangaList');
   list.innerHTML = Array(6).fill(0).map(() => `<div class="skeleton" style="width:100%; aspect-ratio:3/4;"></div>`).join('');
   
-  // --- NEW: IMAGE COMPRESSION LOGIC ---
   async function compressImage(file) {
       return new Promise((resolve) => {
           const reader = new FileReader();
@@ -1080,7 +1130,7 @@ input:checked + .slider:before { transform: translateX(20px); }
                           lastModified: Date.now(),
                       });
                       resolve(compressedFile);
-                  }, 'image/jpeg', 0.9); // 0.9 Quality
+                  }, 'image/jpeg', 0.9);
               };
           };
       });
@@ -1091,18 +1141,11 @@ input:checked + .slider:before { transform: translateX(20px); }
       const formData = new FormData();
       formData.append("file", optimizedFile);
       formData.append("upload_preset", UPLOAD_PRESET);
-
       try {
-          const res = await fetch(CLOUDINARY_URL, {
-              method: "POST",
-              body: formData
-          });
+          const res = await fetch(CLOUDINARY_URL, { method: "POST", body: formData });
           const data = await res.json();
           return data.secure_url;
-      } catch (e) {
-          console.error("Cloudinary Error:", e);
-          throw e;
-      }
+      } catch (e) { throw e; }
   }
 
   const introBg = document.getElementById('introBg');
@@ -1113,7 +1156,6 @@ input:checked + .slider:before { transform: translateX(20px); }
   function startMangaListener() {
       if (unsubscribeManga) unsubscribeManga();
       const mangaQuery = query(collection(db, "mangas"), orderBy("lastUpdated", "desc"), limit(currentLimit));
-      
       unsubscribeManga = onSnapshot(mangaQuery, (snapshot) => {
           window.mangas = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
           renderPublic(); renderFeatured(); renderShowcase(); renderHistory(); updateMangaSelect(); renderBookmarks();
@@ -1126,10 +1168,7 @@ input:checked + .slider:before { transform: translateX(20px); }
   document.getElementById('mainContentWrapper').addEventListener('scroll', (e) => {
       const { scrollTop, scrollHeight, clientHeight } = e.target;
       if (scrollTop + clientHeight >= scrollHeight - 300) {
-          if (window.mangas.length >= currentLimit) {
-              currentLimit += 6;
-              startMangaListener();
-          }
+          if (window.mangas.length >= currentLimit) { currentLimit += 6; startMangaListener(); }
       }
   });
 
@@ -1140,7 +1179,6 @@ input:checked + .slider:before { transform: translateX(20px); }
     const dropdown = document.getElementById('searchDropdown');
     clearTimeout(searchTimer);
     if(!val.trim()) { dropdown.style.display = "none"; return; }
-
     searchTimer = setTimeout(() => {
         const queryStr = val.toLowerCase();
         const filtered = window.mangas.filter(m => m.name.toLowerCase().includes(queryStr)).slice(0, 5);
@@ -1174,15 +1212,7 @@ input:checked + .slider:before { transform: translateX(20px); }
       const imageUrl = await processAndUpload(imgInput.files[0]);
       const now = Date.now();
       await addDoc(collection(db, "mangas"), { 
-        id: now, 
-        name: title, 
-        img: imageUrl, 
-        rating: rating, 
-        genres: selectedGenres, 
-        description: description || "No description available.", 
-        chapters: [],
-        uploadedAt: new Date().toLocaleString(),
-        lastUpdated: now 
+        id: now, name: title, img: imageUrl, rating: rating, genres: selectedGenres, description: description || "No description available.", chapters: [], uploadedAt: new Date().toLocaleString(), lastUpdated: now 
       });
       document.getElementById('mangaTitle').value = ""; document.getElementById('mangaDesc').value = ""; imgInput.value = ""; document.querySelectorAll('.genre-checkbox').forEach(cb => cb.checked = false);
       showStatus("Manga Created! ✨","success");
@@ -1198,10 +1228,9 @@ input:checked + .slider:before { transform: translateX(20px); }
     if(!selectedFbId || !cTitle || files.length === 0) return showStatus("Missing information!","fail");
     btn.disabled = true; 
     const cloudUrls = [];
-    const totalFiles = files.length;
     try {
-      for (let i = 0; i < totalFiles; i++) {
-          showStatus(`Optimizing: Page ${i + 1} / ${totalFiles} ... 🍅`, "success");
+      for (let i = 0; i < files.length; i++) {
+          showStatus(`Optimizing: Page ${i + 1} / ${files.length} ... 🍅`, "success");
           const url = await processAndUpload(files[i]);
           cloudUrls.push(url);
       }
@@ -1210,7 +1239,7 @@ input:checked + .slider:before { transform: translateX(20px); }
       const updatedChapters = [...(targetManga.chapters || []), { title: cTitle, pages: cloudUrls, views: 0, timestamp: now }];
       await updateDoc(doc(db, "mangas", selectedFbId), { chapters: updatedChapters, lastUpdated: now });
       document.getElementById('chapterTitle').value = ""; document.getElementById('chapterFiles').value = ""; document.getElementById('fileStatus').innerText = "No files selected";
-      showStatus(`Published ${totalFiles} pages! ✅`, "success");
+      showStatus(`Published ${files.length} pages! ✅`, "success");
     } catch(e) { showStatus("Upload Failed!", "fail"); } finally { btn.disabled = false; }
   }
 
@@ -1235,20 +1264,27 @@ input:checked + .slider:before { transform: translateX(20px); }
     setTimeout(() => { 
         intro.style.display = "none"; 
         lobby.classList.add("animate-in"); 
+
+        history.replaceState({ lobbyId: 'mainContentWrapper' }, "", "");
+        
         const savedLobby = localStorage.getItem('activeLobbyId');
         const savedMangaFbId = localStorage.getItem('currentOpenMangaFbId');
         const savedChapterIdx = localStorage.getItem('currentReadChapterIdx');
-        if (savedLobby && savedLobby !== 'intro') {
+        
+        if (savedLobby && savedLobby !== 'intro' && savedLobby !== 'mainContentWrapper') {
             if (savedLobby === 'readingLobby' && savedMangaFbId && savedChapterIdx !== null) {
                 window.currentOpenMangaFbId = savedMangaFbId;
                 openReadingLobby(savedMangaFbId, parseInt(savedChapterIdx));
             } 
             else if (savedLobby === 'detailPage' && savedMangaFbId) { openManga(savedMangaFbId); } 
             else if (savedLobby === 'bookmarkPage') { openBookmarkLobby(); }
-            else { navigateTo('mainContentWrapper'); }
-        } else { navigateTo('mainContentWrapper'); }
-        shouldAnimateMangas = true;
-        renderPublic();
+            else { window.navigateTo('mainContentWrapper'); }
+        } else { 
+            document.getElementById('mainContentWrapper').style.display = 'block';
+            localStorage.setItem('activeLobbyId', 'mainContentWrapper');
+        }
+        
+        shouldAnimateMangas = true; renderPublic();
         setTimeout(() => { shouldAnimateMangas = false; }, 2000);
     }, 800);
   }
@@ -1277,9 +1313,10 @@ input:checked + .slider:before { transform: translateX(20px); }
   window.toggleAdmin = () => {
     const sidebar = document.getElementById('adminSidebar');
     sidebar.classList.toggle("show");
+    
+    // Sidebar ပွင့်လာတိုင်း Block စနစ်အတွက် History အသစ် တစ်ခု ထည့်ပေးမယ်
     if(sidebar.classList.contains('show')) {
-        // Admin Sidebar ဖွင့်ရင် History မှာ ပြောင်းလဲမှု တစ်ခု လုပ်ထားမယ်
-        history.pushState({ admin: true }, "");
+        history.pushState(null, "", "");
     }
   }
 
@@ -1300,14 +1337,12 @@ input:checked + .slider:before { transform: translateX(20px); }
       if (!manga.chapters || manga.chapters.length === 0) return false;
       const latestChapter = manga.chapters[manga.chapters.length - 1];
       if (!latestChapter.timestamp) return false;
-      const now = Date.now();
-      return (now - latestChapter.timestamp) < (24 * 60 * 60 * 1000);
+      return (Date.now() - latestChapter.timestamp) < (24 * 60 * 60 * 1000);
   }
 
   function isNewCover(manga) {
       if (!manga.lastUpdated) return false;
-      const now = Date.now();
-      return (now - manga.lastUpdated) < (24 * 60 * 60 * 1000);
+      return (Date.now() - manga.lastUpdated) < (24 * 60 * 60 * 1000);
   }
 
   function renderPublic(){
@@ -1420,8 +1455,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     const m = window.mangas.find(x => x.fbId === fbId);
     if(!m) return;
     
-    // Lobby အသစ်ကို သွားမယ်
-    navigateTo('detailPage');
+    window.navigateTo('detailPage');
 
     const genresHtml = (m.genres || ["Action"]).map(g => `<span class="genre-tag">${g}</span>`).join('');
     const isBookmarked = JSON.parse(localStorage.getItem('bookmarks') || "[]").includes(fbId);
@@ -1461,29 +1495,20 @@ input:checked + .slider:before { transform: translateX(20px); }
       localStorage.setItem('currentOpenMangaFbId', fbId);
       localStorage.setItem('currentReadChapterIdx', chIdx);
       
-      // Reading Lobby ထဲကို သွားမယ်
-      navigateTo('readingLobby');
+      window.navigateTo('readingLobby');
 
       document.getElementById('readingTitle').innerText = ch.title;
       totalPages = ch.pages.length;
       currentPageIndex = 0;
-      
-      // Update Sidebar Chapter List
-      document.getElementById('sidebarChapterList').innerHTML = m.chapters.map((c, i) => `
-        <div class="sidebar-chapter-opt ${i === chIdx ? 'active' : ''}" onclick="openReadingLobby('${fbId}', ${i}); toggleReadingSidebar();">
-            ${c.title}
-        </div>`).join('');
-
+      document.getElementById('sidebarChapterList').innerHTML = m.chapters.map((c, i) => `<div class="sidebar-chapter-opt ${i === chIdx ? 'active' : ''}" onclick="openReadingLobby('${fbId}', ${i}); toggleReadingSidebar();">${c.title}</div>`).join('');
       document.getElementById('backToDetailBtn').onclick = () => closeReadingLobby();
       const nextBtn = document.getElementById('nextChapterBtn');
       if(chIdx + 1 < m.chapters.length) { nextBtn.disabled = false; nextBtn.innerText = "Next"; nextBtn.onclick = () => openReadingLobby(fbId, chIdx + 1); } 
       else { nextBtn.disabled = true; nextBtn.innerText = "End"; }
-      
       const headbarToggle = document.getElementById('headbar-toggle');
       const savedStatus = localStorage.getItem('headBarStatus') !== 'off';
       headbarToggle.checked = savedStatus;
       applyHeadBarSetting(savedStatus);
-
       applyReadMode();
       renderPagesSequentially(ch.pages);
   }
@@ -1505,7 +1530,6 @@ input:checked + .slider:before { transform: translateX(20px); }
       const st = e.target.scrollTop;
       const header = document.getElementById('readingHeader');
       const isAutoOff = localStorage.getItem('headBarStatus') === 'off';
-
       if(isAutoOff) {
           if (st > lastScrollTop && st > 100) { header.classList.add('hidden'); } 
           else { header.classList.remove('hidden'); }
@@ -1513,35 +1537,24 @@ input:checked + .slider:before { transform: translateX(20px); }
       lastScrollTop = st <= 0 ? 0 : st;
   });
 
-  // --- UPDATED: SEQUENTIAL LOADING & PLACEHOLDERS ---
   async function renderPagesSequentially(pages) {
       const container = document.getElementById('pagesContainer');
       container.innerHTML = ''; 
-      
       const imgElements = [];
-
-      // ၁။ Placeholder Box တွေ အရင်ဆောက်ထားမယ်
       pages.forEach((p, index) => {
           const wrapper = document.createElement('div');
           wrapper.className = currentReadMode === 'scroll' ? 'page-placeholder' : 'page-item';
-          
           const img = document.createElement('img');
           img.style.opacity = "0";
           img.style.transition = "opacity 0.5s ease";
-          
-          wrapper.appendChild(img);
-          container.appendChild(wrapper);
+          wrapper.appendChild(img); container.appendChild(wrapper);
           imgElements.push({ img, url: p, wrapper });
       });
-
-      // ၂။ တစ်ပုံပြီးမှ တစ်ပုံ Loading လုပ်မယ်
       for (let i = 0; i < imgElements.length; i++) {
           await secureImageLoad(imgElements[i].img, imgElements[i].url);
-          // ပုံပေါ်လာရင် Placeholder background ကို ဖျက်မယ်
           imgElements[i].wrapper.style.background = 'transparent';
           imgElements[i].wrapper.classList.remove('page-placeholder');
       }
-      
       if(currentReadMode === 'page') container.style.transform = `translateX(0)`;
   }
 
@@ -1549,8 +1562,10 @@ input:checked + .slider:before { transform: translateX(20px); }
       if(e) e.stopPropagation();
       const sidebar = document.getElementById('readingSettingsSidebar');
       sidebar.classList.toggle('show');
+      
+      // Sidebar ပွင့်လာတိုင်း Block စနစ်အတွက် History အသစ် တစ်ခု ထည့်ပေးမယ်
       if(sidebar.classList.contains('show')) {
-          history.pushState({ sidebar: 'reading' }, "");
+          history.pushState(null, "", "");
       }
   };
 
@@ -1560,12 +1575,9 @@ input:checked + .slider:before { transform: translateX(20px); }
     if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().then(() => {
             header.style.display = 'none';
-            btn.innerText = "Exit Full Screen";
-            btn.classList.add('active');
+            btn.innerText = "Exit Full Screen"; btn.classList.add('active');
         });
-    } else {
-        document.exitFullscreen();
-    }
+    } else { document.exitFullscreen(); }
     toggleReadingSidebar();
   };
 
@@ -1573,8 +1585,7 @@ input:checked + .slider:before { transform: translateX(20px); }
       if (!document.fullscreenElement) {
           document.getElementById('readingHeader').style.display = 'flex';
           const btn = document.getElementById('lobbyToggleBtn');
-          btn.innerText = "Enable Full Screen";
-          btn.classList.remove('active');
+          btn.innerText = "Enable Full Screen"; btn.classList.remove('active');
       }
   });
 
@@ -1582,7 +1593,6 @@ input:checked + .slider:before { transform: translateX(20px); }
       currentReadMode = mode;
       document.getElementById('modeScroll').classList.toggle('active', mode === 'scroll');
       document.getElementById('modePage').classList.toggle('active', mode === 'page');
-      
       const m = window.mangas.find(x => x.fbId === window.currentOpenMangaFbId);
       const chIdx = parseInt(localStorage.getItem('currentReadChapterIdx'));
       applyReadMode(); 
@@ -1630,21 +1640,19 @@ input:checked + .slider:before { transform: translateX(20px); }
   window.closeReadingLobby = () => { 
     if(document.fullscreenElement) document.exitFullscreen();
     localStorage.removeItem('currentReadChapterIdx'); 
-    navigateTo('detailPage'); 
+    history.back();
   }
   
   window.onclick = (e) => { 
     const sidebar = document.getElementById('readingSettingsSidebar');
-    if(sidebar.classList.contains('show') && !sidebar.contains(e.target) && !e.target.closest('.iconBtn')) {
-        sidebar.classList.remove('show');
+    if(sidebar.classList.contains('show') && !sidebar.contains(e.target) && !e.target.closest('.iconBtn')) { 
+        sidebar.classList.remove('show'); 
     }
   };
 
   window.closeDetail = () => { 
     localStorage.removeItem('currentOpenMangaFbId');
-    const source = sessionStorage.getItem('active_lobby_source') || 'main';
-    navigateTo(source === 'bookmark' ? 'bookmarkPage' : 'mainContentWrapper');
-    if(source !== 'bookmark') renderPublic();
+    history.back();
   }
 
   window.toggleBookmark = function(fbId) {
@@ -1656,24 +1664,24 @@ input:checked + .slider:before { transform: translateX(20px); }
   
   window.openBookmarkLobby = function() { 
     document.getElementById('adminSidebar').classList.remove('show'); 
-    navigateTo('bookmarkPage'); 
-    renderBookmarks(); 
+    window.navigateTo('bookmarkPage'); renderBookmarks(); 
   }
   
-  window.closeBookmarkLobby = function() { navigateTo('mainContentWrapper'); }
+  window.closeBookmarkLobby = function() { 
+    history.back();
+  }
 
   function renderBookmarks() {
     const b = JSON.parse(localStorage.getItem('bookmarks') || "[]");
     const container = document.getElementById('bookmarkList');
     if(b.length === 0) { container.innerHTML = "<p style='grid-column: 1/-1; text-align:center; opacity:0.4; padding:50px;'>No bookmarks yet.</p>"; return; }
     container.innerHTML = window.mangas.filter(m => b.includes(m.fbId)).map(m => `
-        <div class="manga" onclick="openManga('${m.fbId}')">
-            ${shouldShowNewBadge(m) ? '<div class="new-chapter-badge">New Chapter Update</div>' : ''}
-            ${isNewCover(m) ? '<div class="premium-cover-badge">New</div>' : ''}
-            <img src="${m.img}" loading="lazy"><p>${m.name}</p>
-        </div>`).join('');
+      <div class="manga" onclick="openManga('${m.fbId}')">
+        ${shouldShowNewBadge(m) ? '<div class="new-chapter-badge">New Chapter Update</div>' : ''}
+        ${isNewCover(m) ? '<div class="premium-cover-badge">New</div>' : ''}
+        <img src="${m.img}" loading="lazy"><p>${m.name}</p>
+      </div>`).join('');
   }
 </script>
 </body>
 </html>
-

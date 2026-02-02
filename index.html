@@ -788,8 +788,10 @@ input:checked + .slider:before { transform: translateX(20px); }
 .manga-del-btn:active { transform: scale(0.85); background: #ff4444; color: #fff; box-shadow: 0 0 15px rgba(255, 68, 68, 0.5); }
 .manga-del-btn svg { width: 18px; height: 18px; filter: drop-shadow(0 0 5px rgba(255, 68, 68, 0.3)); }
 
-#bookmarkPage { display:none; padding: 20px; width: 100%; min-height: 100vh; background: var(--bg); position: fixed; top: 0; left: 0; z-index: 5500; overflow-y: auto; }
-.bookmark-header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
+/* FIXED BOOKMARK PAGE (Uniform with other lobbies) */
+#bookmarkPage { display:none; padding: 0; width: 100%; min-height: 100vh; background: var(--bg); position: absolute; top: 0; left: 0; z-index: 5500; }
+.bookmark-header-wrap { padding: 20px; display: flex; align-items: center; gap: 15px; }
+
 .bookmark-btn-sidebar { display: flex; align-items: center; gap: 12px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 20px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; }
 .bookmark-btn-sidebar:active { transform: scale(0.95); background: var(--accent); }
 .bookmark-icon-wrap { width: 35px; height: 35px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
@@ -929,11 +931,11 @@ input:checked + .slider:before { transform: translateX(20px); }
 </div>
 
 <div id="bookmarkPage" class="app-lobby">
-  <div class="bookmark-header">
+  <div class="bookmark-header-wrap">
     <button class="backBtn" onclick="closeBookmarkLobby()" style="margin:0">← BACK</button>
-    <h2 style="font-weight: 900; letter-spacing: 1px;">MY BOOKMARK LIST</h2>
+    <h2 style="font-weight: 900; letter-spacing: 1px; text-transform: uppercase;">My Bookmarks</h2>
   </div>
-  <div id="bookmarkList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:20px;"></div>
+  <div id="bookmarkList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:20px; padding: 0 20px 40px;"></div>
 </div>
 
 <div id="detailPage" class="app-lobby">
@@ -1712,7 +1714,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 
   function renderBookmarks() {
     const b = JSON.parse(localStorage.getItem('bookmarks') || "[]"), container = document.getElementById('bookmarkList');
-    if(b.length === 0) { container.innerHTML = "<p style='grid-column: 1/-1; text-align:center; opacity:0.4; padding:50px;'>No bookmarks yet.</p>"; return; }
+    if(b.length === 0) { container.innerHTML = "<p style='grid-column: 1/-1; text-align:center; opacity:0.4; padding:100px 0;'>No bookmarks yet. ❤️</p>"; return; }
     container.innerHTML = window.mangas.filter(m => b.includes(m.fbId)).map(m => `
       <div class="manga" onclick="openManga('${m.fbId}')">
         ${shouldShowNewBadge(m) ? '<div class="new-chapter-badge">New Update</div>' : ''}

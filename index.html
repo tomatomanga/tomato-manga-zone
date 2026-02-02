@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Tomato Manga Zone</title>
 
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#ff2a2a">
+
 <style>
 /* CSS styles - Premium Animation & Speed Fixes */
 *{margin:0;padding:0;box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
@@ -18,10 +23,22 @@ html, body {
   background:var(--bg); 
   color:var(--text); 
   font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
-  transition:.35s; 
+  transition: filter 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* ပိုချောမွေ့တဲ့ Blur Transition */
   scroll-behavior: auto !important; 
   overflow: hidden; 
   overscroll-behavior-y: contain; 
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Screenshot Protection - Overlay Blur when not focused */
+@media only screen and (max-width: 768px) {
+  body:active { filter: none; }
+}
+
+/* Print Protection */
+@media print {
+  body { display: none !important; }
 }
 
 /* App Containers */
@@ -30,6 +47,7 @@ html, body {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  display: none; 
 }
 
 /* Performance Boost */
@@ -37,6 +55,31 @@ html, body {
   content-visibility: auto;
   contain-intrinsic-size: 500px;
 }
+
+/* --- PRO BREADCRUMB STYLE (FIXED POSITION) --- */
+#breadcrumb-bar {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 10px 18px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    gap: 8px;
+    color: #888;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    white-space: nowrap;
+    overflow-x: auto;
+    position: sticky; 
+    top: 80px; 
+    width: 100%; 
+    z-index: 1999;
+}
+#breadcrumb-bar::-webkit-scrollbar { display: none; }
+.bc-item { cursor: pointer; transition: 0.3s; color: #666; }
+.bc-item:hover { color: var(--accent); }
+.bc-active { color: var(--text); }
+.bc-sep { opacity: 0.3; }
 
 /* --- PREMIUM CINEMATIC ANIMATIONS --- */
 @keyframes lobbyEntrance {
@@ -75,7 +118,24 @@ html, body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* NEW: PREMIUM GLOW ANIMATION FOR NEW CHAPTER */
+.skeleton-loader {
+    background: #1a1a1a;
+    background-image: linear-gradient(to right, #1a1a1a 0%, #252525 20%, #1a1a1a 40%, #1a1a1a 100%);
+    background-repeat: no-repeat;
+    background-size: 800px 100%;
+    animation: shimmer 1.5s linear infinite forwards;
+    border-radius: 10px;
+}
+
+.fade-in-img {
+    opacity: 0;
+    transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-in-img.loaded {
+    opacity: 1;
+}
+
 @keyframes newBadgeGlow {
   from { opacity: 0.6; box-shadow: 0 0 5px var(--accent); }
   to { opacity: 1; box-shadow: 0 0 15px var(--accent); }
@@ -98,7 +158,6 @@ html, body {
     pointer-events: none;
 }
 
-/* CODE အသစ်: PREMIUM COVER BADGE (Bottom Left Inside) */
 .premium-cover-badge {
     position: absolute;
     bottom: 45px; 
@@ -129,7 +188,6 @@ html, body {
     display: inline-block;
 }
 
-/* --- NEW PREMIUM WAVE ANIMATION --- */
 .wave-container {
   width: 100%;
   height: 40px;
@@ -162,16 +220,6 @@ html, body {
   100% { transform: translateX(-50%); }
 }
 
-.skeleton {
-  background: #222;
-  background-image: linear-gradient(to right, #222 0%, #333 20%, #222 40%, #222 100%);
-  background-repeat: no-repeat;
-  background-size: 800px 104px;
-  animation: shimmer 1.5s linear infinite forwards;
-  border-radius: 10px;
-}
-
-/* --- NEW: IMAGE PLACEHOLDER & SKELETON --- */
 .page-placeholder {
     width: 100%;
     aspect-ratio: 2 / 3;
@@ -220,7 +268,6 @@ html, body {
 
 #headerInner{ height:80px; display:flex; align-items:center; padding:0 18px; justify-content: space-between; overflow: visible; position: relative;}
 
-/* --- UPDATED SEARCH CONTAINER --- */
 #searchContainer {
   position: absolute; left: 18px; right: 80px; height: 50px;
   background: var(--card); border-radius: 15px; border: 1px solid var(--accent);
@@ -235,7 +282,6 @@ html, body {
 }
 .searchClose { color: var(--accent); font-weight: 900; cursor: pointer; padding: 5px; font-size: 20px;}
 
-/* PREMIUM SEARCH DROPDOWN LIST */
 #searchDropdown {
     position: absolute;
     top: calc(100% + 5px);
@@ -350,7 +396,6 @@ html, body {
   display: none; 
 }
 
-/* --- NEW PREMIUM TITLE STYLE --- */
 .manga-list-header {
   padding: 30px 25px 5px;
   display: flex;
@@ -491,7 +536,6 @@ html, body {
 
 .backBtn{background:var(--card);color:white;padding:12px 20px;margin: 20px;border-radius:30px;cursor:pointer;border:1px solid rgba(255,255,255,0.1); font-weight: bold; transition: 0.3s; display: inline-block;}
 
-/* --- CHAPTER LIST SECTION --- */
 .chapter-list-section {
     margin-top: 20px;
     padding: 0 20px 40px;
@@ -541,7 +585,7 @@ html, body {
     width: 100%; 
     display: block; 
     height: auto;
-    pointer-events: none; /* Security fix */
+    pointer-events: none;
     user-select: none;
 }
 
@@ -623,7 +667,6 @@ html, body {
 
 .reader-controls { display: flex; align-items: center; gap: 10px; }
 
-/* --- NEW SIDEBAR SETTINGS DESIGN --- */
 #readingSettingsSidebar {
     position: fixed; top: 0; right: -280px; width: 280px; height: 100%;
     background: #0a0a0a; border-left: 1px solid var(--accent);
@@ -639,7 +682,6 @@ html, body {
 .sidebar-select-btn { width: 100%; padding: 12px; background: #1a1a1a; color: #fff; border: 1px solid #333; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: left; margin-bottom: 10px; transition: 0.3s; }
 .sidebar-select-btn.active { background: var(--accent); border-color: var(--accent); }
 
-/* --- TOGGLE SWITCH CSS --- */
 .switch-container { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
 .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
 .switch input { opacity: 0; width: 0; height: 0; }
@@ -660,7 +702,6 @@ input:checked + .slider:before { transform: translateX(20px); }
 #chapterSelectPopup.show { bottom: 0; }
 .chapter-option-item { padding: 15px; border-bottom: 1px solid #222; font-weight: bold; }
 
-/* --- ADMIN PANEL PREMIUM RE-DESIGN --- */
 #adminSidebar { 
     position:fixed; top:0; right:-320px; width:320px; height:100%; 
     background: #0a0a0a; backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); 
@@ -728,7 +769,6 @@ input:checked + .slider:before { transform: translateX(20px); }
 .del-btn { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: rgba(255,0,0,0.1); color: #ff4444; border-radius: 5px; cursor: pointer; transition: 0.2s;}
 .del-btn:hover { background: #ff0000; color: white; }
 
-/* PREMIUM TRASH ICON STYLE */
 .manga-del-btn {
   margin-left: auto; color: #ff4444; cursor: pointer; padding: 8px; border-radius: 8px;
   background: rgba(255, 68, 68, 0.1); border: 1px solid rgba(255, 68, 68, 0.2);
@@ -743,10 +783,9 @@ input:checked + .slider:before { transform: translateX(20px); }
 .bookmark-btn-sidebar:active { transform: scale(0.95); background: var(--accent); }
 .bookmark-icon-wrap { width: 35px; height: 35px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
-/* --- PREMIUM TOAST NOTIFICATION (INFINITY NOFI) --- */
 .toast-msg {
     visibility: hidden;
-    white-space: nowrap; /* စာသားကို လုံးဝ (လုံးဝ) အောက်ကြောင်းမဆင်းစေရ */
+    white-space: nowrap; 
     min-width: fit-content;
     background-color: rgba(15, 15, 15, 0.98);
     color: #ffffff;
@@ -754,18 +793,17 @@ input:checked + .slider:before { transform: translateX(20px); }
     border-radius: 4px;
     padding: 15px 35px;
     position: fixed;
-    z-index: 20000; /* အပေါ်ဆုံးမှာ အမြဲရှိနေစေရန် */
+    z-index: 20000; 
     left: 50%;
     bottom: 80px;
     transform: translateX(-50%);
     font-size: 16px;
     font-weight: bold;
-    border-left: 5px solid #ffd700; /* Premium ဖြစ်အောင် ရွှေရောင်ဘေးလိုင်းလေး */
+    border-left: 5px solid #ffd700; 
     box-shadow: 0 10px 40px rgba(0,0,0,0.8);
     opacity: 0;
 }
 
-/* Nofi ပြတိုင်း တုန်ခါပြီး အသစ်ဖြစ်နေစေမည့် Animation */
 .toast-msg.show {
     visibility: visible;
     opacity: 1;
@@ -789,6 +827,10 @@ input:checked + .slider:before { transform: translateX(20px); }
   <h1>Tomato Manga Zone</h1>
   <p>Ultimate Reading Experience</p>
   <button onclick="enterSite()">START READING</button>
+</div>
+
+<div id="breadcrumb-bar" style="display:none;">
+    <span class="bc-item" onclick="navigateTo('mainContentWrapper')">HOME</span>
 </div>
 
 <div id="mainContentWrapper" class="app-lobby">
@@ -844,49 +886,35 @@ input:checked + .slider:before { transform: translateX(20px); }
   
   <div id="adminForm" style="display:none">
     <div class="admin-section-title">Step 1: New Manga</div>
-    
     <label class="input-label">Manga Title</label>
     <input id="mangaTitle" placeholder="Enter title...">
-    
     <label class="input-label">Cover Image</label>
     <input type="file" id="mangaImg" accept="image/*" class="admin-secondary-btn">
-    
     <label class="input-label">Select Genres</label>
     <div class="genre-select-container" id="adminGenreList"></div>
-    
     <label class="input-label">Description</label>
     <textarea id="mangaDesc" placeholder="Brief story description..."></textarea>
-    
     <label class="input-label">Rating</label>
     <input id="mangaRating" type="number" step="0.1" value="4.9">
-    
     <button onclick="uploadManga()" id="createBtn" class="admin-primary-btn">Create Manga Entry</button>
 
     <div style="height:1px; background:#222; margin: 30px 0;"></div>
 
     <div class="admin-section-title">Step 2: Add Content</div>
-    
     <label class="input-label">Select Target Manga</label>
     <select id="mangaSelect"></select>
-    
     <label class="input-label">Chapter Name</label>
     <input id="chapterTitle" placeholder="e.g. Chapter 01">
-    
     <label class="input-label">Manga Pages</label>
     <input type="file" id="chapterFiles" accept="image/*" multiple onchange="handleFiles(this.files)" style="display:none">
     <button onclick="document.getElementById('chapterFiles').click()" class="admin-secondary-btn">Select Page Images</button>
     <p id="fileStatus" style="font-size:10px; text-align:center; margin-bottom:10px; opacity:0.5;">No files selected</p>
-    
     <button onclick="uploadChapter()" id="uploadBtn" class="admin-primary-btn">Publish Chapter</button>
 
-    <div class="admin-section-title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="margin-right:5px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
-        Database Management
-    </div>
+    <div class="admin-section-title">Database Management</div>
     <div id="historyList"></div>
   </div>
-  
-  <div id="adminBack" onclick="toggleAdmin()" style="margin-top:20px; opacity:0.5; font-size:13px; text-align:center; cursor:pointer;">← CLOSE PANEL</div>
+  <div id="adminBack" onclick="manualCloseSidebar()" style="margin-top:20px; opacity:0.5; font-size:13px; text-align:center; cursor:pointer;">← CLOSE PANEL</div>
 </div>
 
 <div id="bookmarkPage" class="app-lobby">
@@ -900,12 +928,10 @@ input:checked + .slider:before { transform: translateX(20px); }
 <div id="detailPage" class="app-lobby">
   <button class="backBtn" onclick="closeDetail()">← BACK</button>
   <div class="lobby-container" id="lobbyInfo"></div>
-  
   <div class="wave-container">
     <div class="wave wave1"></div>
     <div class="wave wave2"></div>
   </div>
-
   <div class="chapter-list-section">
       <div class="chapter-list-header">Chapter List</div>
       <div id="chapterItemsContainer"></div>
@@ -918,14 +944,13 @@ input:checked + .slider:before { transform: translateX(20px); }
         <div id="readingTitle" style="font-weight:bold;">Chapter Name</div>
         <div class="reader-controls">
             <div class="iconBtn" onclick="toggleReadingSidebar(event)">
-                <svg viewBox="0 0 24 24" fill="white"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                <svg viewBox="0 0 24 24" fill="white"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c1.2.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
             </div>
         </div>
     </div>
 
     <div id="readingSettingsSidebar">
         <div class="sidebar-title">Reading Menu</div>
-        
         <div class="sidebar-section-label">General Settings</div>
         <div class="switch-container">
             <span>Show Head Bar</span>
@@ -934,24 +959,18 @@ input:checked + .slider:before { transform: translateX(20px); }
                 <span class="slider"></span>
             </label>
         </div>
-
         <div class="sidebar-section-label">Reading Lobby Mode</div>
         <button id="lobbyToggleBtn" class="sidebar-select-btn" onclick="toggleFullScreenLobby()">Enable Full Screen</button>
-        
         <div class="sidebar-section-label">Viewing Mode</div>
         <button id="modeScroll" class="sidebar-select-btn active" onclick="setReadMode('scroll')">Vertical Scroll</button>
         <button id="modePage" class="sidebar-select-btn" onclick="setReadMode('page')">Page by Page</button>
-
         <div class="sidebar-section-label">Select Chapter</div>
         <div id="sidebarChapterList" class="sidebar-chapter-list"></div>
-        
         <div style="margin-top:auto; padding-top:20px; border-top: 1px solid #222;">
-            <button class="admin-secondary-btn" onclick="toggleReadingSidebar()">CLOSE MENU</button>
+            <button class="admin-secondary-btn" onclick="manualCloseSidebar()">CLOSE MENU</button>
         </div>
     </div>
-
     <div id="pagesContainer"></div>
-
     <div class="reading-nav-panel">
         <button class="nav-btn back-to-lobby" id="backToDetailBtn">Back</button>
         <button class="nav-btn" id="nextChapterBtn">Next</button>
@@ -964,7 +983,9 @@ input:checked + .slider:before { transform: translateX(20px); }
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc, increment, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  // --- ADDED SECURITY SYSTEM ---
+  // --- 🛡️ GUARDIAN SYSTEM (MALWARE & VIRUS PROTECTION) ---
+  
+  // Guardian 1: DevTools & Inspection Shield
   document.addEventListener('contextmenu', e => e.preventDefault());
   document.onkeydown = function(e) {
       if (e.keyCode == 123) return false;
@@ -972,34 +993,104 @@ input:checked + .slider:before { transform: translateX(20px); }
       if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
   };
 
+  // Guardian 2: Anti-Screenshot & Blur Guardian (Ultimate Edition)
+  const ironWall = {
+      on: () => {
+          document.body.style.filter = "blur(100px) grayscale(100%)";
+          document.body.style.pointerEvents = "none";
+      },
+      off: () => {
+          document.body.style.filter = "none";
+          document.body.style.pointerEvents = "auto";
+      }
+  };
+
+  // Screenshot ရိုက်ဖို့ကြိုးစားရင် (Focus ပျောက်ရင် သို့မဟုတ် ဖုန်းမှာ UI ပြောင်းရင်) ဝါးမယ်
+  window.addEventListener('blur', ironWall.on);
+  window.addEventListener('focus', ironWall.off);
+  document.addEventListener('visibilitychange', () => {
+      if (document.hidden) ironWall.on();
+      else setTimeout(ironWall.off, 500);
+  });
+
+  // Mobile မှာ Screenshot ရိုက်ဖို့ ခလုတ်နှိပ်တဲ့အခါ Touch interaction ပျောက်သွားတာကို ဖမ်းမယ်
+  window.addEventListener('touchstart', ironWall.off);
+  window.addEventListener('touchend', () => {
+      // ဒီမှာ Logic ထပ်ထည့်ချင်ရင် ထည့်လို့ရတယ်
+  });
+
+  document.addEventListener('keyup', (e) => {
+    if (e.key == 'PrintScreen') {
+        ironWall.on();
+        navigator.clipboard.writeText('Security Alert: Content Protected!');
+        alert('Screenshots are prohibited! 🛡️');
+        setTimeout(ironWall.off, 1500);
+    }
+  });
+
+  // Guardian 3: Integrity & Behavior Watchdog
+  let isAdminLoggedIn = false; 
   setInterval(function() {
+      if (isAdminLoggedIn) return; 
       const threshold = 160;
-      if (window.outerWidth - window.innerWidth > threshold || window.outerHeight - window.innerHeight > threshold) {
-          document.body.innerHTML = "<h1 style='color:red; text-align:center; margin-top:50px;'>Security Alert: Developer Tools Detected!</h1>";
+      if ((window.outerWidth - window.innerWidth > threshold || window.outerHeight - window.innerHeight > threshold) && window.innerWidth > 500) {
+          document.body.innerHTML = "<div style='background:#000; height:100vh; display:flex; align-items:center; justify-content:center;'><h1 style='color:red; text-align:center;'>Security Alert: Unauthorized Debugging Tools Detected! 🛡️</h1></div>";
           setTimeout(() => { window.location.reload(); }, 2000);
       }
   }, 1000);
 
-  async function secureImageLoad(imgElement, imageUrl) {
-      return new Promise((resolve) => {
-          fetch(imageUrl).then(res => res.blob()).then(blob => {
-              const objectURL = URL.createObjectURL(blob);
-              imgElement.src = objectURL;
-              imgElement.onload = () => {
-                  imgElement.style.opacity = "1";
-                  URL.revokeObjectURL(objectURL);
-                  resolve();
-              };
-          }).catch(e => {
-              imgElement.src = imageUrl;
-              imgElement.onload = () => { 
-                imgElement.style.opacity = "1"; 
-                resolve();
-              };
-          });
+  // Guardian 5: Input & Payload Purifier (Anti-Virus)
+  async function checkFileIntegrity(file) {
+      return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+              const uint = new Uint8Array(e.target.result);
+              let bytes = [];
+              uint.forEach((byte) => { bytes.push(byte.toString(16)); });
+              const hex = bytes.join('').toUpperCase();
+              if (!hex.startsWith('FFD8FF') && !hex.startsWith('89504E47')) {
+                  alert('Security Violation: Malware Detected! ☣️');
+                  window.location.reload();
+                  reject();
+              } else { resolve(); }
+          };
+          reader.readAsArrayBuffer(file.slice(0, 4));
       });
   }
-  // --- SECURITY SYSTEM END ---
+
+  // PWA Service Worker Registration
+  if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+          .then(() => console.log("Guardian Service Worker Active! 🛡️"))
+          .catch((err) => console.log("SW Error:", err));
+  }
+
+  // --- CORE SYSTEM START ---
+
+  async function secureImageLoad(imgElement, imageUrl) {
+      return new Promise((resolve) => {
+          const parent = imgElement.parentElement;
+          if (parent) parent.classList.add('skeleton-loader');
+          imgElement.classList.add('fade-in-img');
+          
+          const img = new Image();
+          img.src = imageUrl;
+          img.onload = () => {
+              imgElement.src = imageUrl;
+              imgElement.classList.add('loaded');
+              imgElement.addEventListener('contextmenu', e => e.preventDefault());
+              imgElement.setAttribute('draggable', 'false');
+              if (parent) parent.classList.remove('skeleton-loader');
+              resolve();
+          };
+          img.onerror = () => {
+              imgElement.src = "https://via.placeholder.com/300x450?text=Error+Loading";
+              imgElement.classList.add('loaded');
+              if (parent) parent.classList.remove('skeleton-loader');
+              resolve();
+          };
+      });
+  }
 
   const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dxbelpram/image/upload";
   const UPLOAD_PRESET = "manga_upload";
@@ -1022,94 +1113,76 @@ input:checked + .slider:before { transform: translateX(20px); }
   let unsubscribeManga = null;
   let shouldAnimateMangas = true;
   const lobbyScrollMemory = {};
+  
+  function updateBreadcrumbs(pathArray) {
+      const bar = document.getElementById('breadcrumb-bar');
+      if (!bar) return;
+      let html = `<span class="bc-item" onclick="navigateTo('mainContentWrapper')">HOME</span>`;
+      pathArray.forEach((item, idx) => {
+          html += ` <span class="bc-sep">/</span> `;
+          const isLast = idx === pathArray.length - 1;
+          html += `<span class="bc-item ${isLast ? 'bc-active' : ''}" onclick="${item.action}">${item.name}</span>`;
+      });
+      bar.innerHTML = html;
+      bar.style.display = (pathArray.length > 0) ? 'flex' : 'none';
+  }
 
-  // --- [GLOBAL NAVIGATION CONTROLLER - AUTO BACK FIX] ---
-  window.navigateTo = function(targetId) {
+  window.navigateTo = function(targetId, updateHistory = true) {
     if (!targetId) return;
-    
-    history.pushState({ lobbyId: targetId }, "", "");
+    if (updateHistory) { history.pushState({ lobbyId: targetId }, "", ""); }
     localStorage.setItem('activeLobbyId', targetId);
-
-    const allLobbies = document.querySelectorAll('.app-lobby');
     
+    const allLobbies = document.querySelectorAll('.app-lobby');
     allLobbies.forEach(l => {
-      if (getComputedStyle(l).display === 'block') {
-        lobbyScrollMemory[l.id] = l.scrollTop;
-        l.style.display = 'none';
+      if (getComputedStyle(l).display === 'block') { 
+          lobbyScrollMemory[l.id] = l.scrollTop; 
       }
+      l.style.display = 'none';
     });
-
+    
     const target = document.getElementById(targetId);
     if (target) {
-      target.style.display = 'block';
+      target.style.display = 'block'; 
       const savedPos = lobbyScrollMemory[targetId] || 0;
-      if(targetId === 'mainContentWrapper') shouldAnimateMangas = false;
+      if(targetId === 'mainContentWrapper') { 
+          shouldAnimateMangas = false; 
+          updateBreadcrumbs([]); 
+      }
+      else if(targetId === 'bookmarkPage') {
+          updateBreadcrumbs([{ name: 'BOOKMARKS', action: 'navigateTo("bookmarkPage")' }]);
+      }
       setTimeout(() => { target.scrollTop = savedPos; }, 10);
     }
   };
 
-  // --- [INFINITY NOFI & BLOCK SYSTEM] ---
   window.showToast = function(message) {
       const toast = document.getElementById("toastBox");
-      
-      // အရင်ပြနေတဲ့ Nofi ရှိရင် ဖျက်ချပြီး အသစ်ပြန်ပြမယ် (Repeatable ဖြစ်အောင်)
       toast.classList.remove("show");
-      void toast.offsetWidth; // Animation ကို Reset လုပ်ဖို့ Force reflow လုပ်တာပါ
-
+      void toast.offsetWidth; 
       toast.innerText = message;
       toast.classList.add("show");
-      
-      // ၂ စက္ကန့်ကြာရင် ပြန်ဖျောက်မယ်
       if (window.toastTimer) clearTimeout(window.toastTimer);
-      window.toastTimer = setTimeout(() => {
-          toast.classList.remove("show");
-      }, 2000);
+      window.toastTimer = setTimeout(() => { toast.classList.remove("show"); }, 2000);
   }
 
-  // [BACK BUTTON INTERCEPTION - STRICT SIDEBAR MODE]
   window.onpopstate = function(event) {
     const readingSidebar = document.getElementById('readingSettingsSidebar');
     const adminSidebar = document.getElementById('adminSidebar');
-    
-    // Sidebar တွေပွင့်နေရင် Back ကို လုံးဝ ပိတ်ထားမယ်
-    if ((readingSidebar && readingSidebar.classList.contains('show')) || 
-        (adminSidebar && adminSidebar.classList.contains('show'))) {
-        
-        // [BLOCK] History ကို လက်ရှိမှာပဲ အတင်း ပြန်ထိန်းထားမယ်
-        history.pushState(event.state, "", ""); 
-        
-        // [INFINITY NOFI] အကြိမ် ၁၀၀ နှိပ်ရင် ၁၀၀ လုံး ပြမယ်
-        showToast("Close Menu ဖြင့်ထွက်ပေးပါ"); 
+    if ((readingSidebar && readingSidebar.classList.contains('show')) || (adminSidebar && adminSidebar.classList.contains('show'))) {
+        if(readingSidebar) readingSidebar.classList.remove('show');
+        if(adminSidebar) adminSidebar.classList.remove('show');
         return;
     }
-
-    // ၂။ History State ရှိရင် သက်ဆိုင်ရာ Lobby ကို ပြမယ်
-    if (event.state && event.state.lobbyId) {
-        const targetId = event.state.lobbyId;
-        document.querySelectorAll('.app-lobby').forEach(l => l.style.display = 'none');
-        const target = document.getElementById(targetId);
-        if (target) {
-            target.style.display = 'block';
-            localStorage.setItem('activeLobbyId', targetId);
-        }
-    } else {
-        document.querySelectorAll('.app-lobby').forEach(l => l.style.display = 'none');
-        document.getElementById('mainContentWrapper').style.display = 'block';
-        localStorage.setItem('activeLobbyId', 'mainContentWrapper');
-    }
+    if (event.state && event.state.lobbyId) { window.navigateTo(event.state.lobbyId, false); } 
+    else { window.navigateTo('mainContentWrapper', false); }
   };
-
-  document.addEventListener('touchmove', function (e) {
-      const activeLobby = document.querySelector('.app-lobby[style*="display: block"]');
-      if (activeLobby && activeLobby.scrollTop <= 0 && e.touches[0].clientY > 10) { }
-  }, { passive: false });
 
   const genreOptions = ["Action", "Adventure", "Comedy", "Drama", "Fantasy", "Horror", "Mystery", "Romance", "Sci-Fi", "Slice of Life", "Sports", "Supernatural", "Thriller", "Seinen", "Shounen"];
   const adminGenreDiv = document.getElementById('adminGenreList');
   adminGenreDiv.innerHTML = genreOptions.map(g => `<label class="genre-option"><input type="checkbox" value="${g}" class="genre-checkbox"> ${g}</label>`).join('');
 
   const list = document.getElementById('mangaList');
-  list.innerHTML = Array(6).fill(0).map(() => `<div class="skeleton" style="width:100%; aspect-ratio:3/4;"></div>`).join('');
+  list.innerHTML = Array(6).fill(0).map(() => `<div class="skeleton-loader" style="width:100%; aspect-ratio:3/4;"></div>`).join('');
   
   async function compressImage(file) {
       return new Promise((resolve) => {
@@ -1121,14 +1194,10 @@ input:checked + .slider:before { transform: translateX(20px); }
               img.onload = () => {
                   const canvas = document.createElement('canvas');
                   const ctx = canvas.getContext('2d');
-                  canvas.width = img.width;
-                  canvas.height = img.height;
+                  canvas.width = img.width; canvas.height = img.height;
                   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                   canvas.toBlob((blob) => {
-                      const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
-                          type: 'image/jpeg',
-                          lastModified: Date.now(),
-                      });
+                      const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", { type: 'image/jpeg', lastModified: Date.now() });
                       resolve(compressedFile);
                   }, 'image/jpeg', 0.9);
               };
@@ -1137,14 +1206,13 @@ input:checked + .slider:before { transform: translateX(20px); }
   }
 
   async function processAndUpload(file) {
+      await checkFileIntegrity(file); 
       const optimizedFile = await compressImage(file);
       const formData = new FormData();
-      formData.append("file", optimizedFile);
-      formData.append("upload_preset", UPLOAD_PRESET);
+      formData.append("file", optimizedFile); formData.append("upload_preset", UPLOAD_PRESET);
       try {
           const res = await fetch(CLOUDINARY_URL, { method: "POST", body: formData });
-          const data = await res.json();
-          return data.secure_url;
+          const data = await res.json(); return data.secure_url;
       } catch (e) { throw e; }
   }
 
@@ -1159,17 +1227,13 @@ input:checked + .slider:before { transform: translateX(20px); }
       unsubscribeManga = onSnapshot(mangaQuery, (snapshot) => {
           window.mangas = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
           renderPublic(); renderFeatured(); renderShowcase(); renderHistory(); updateMangaSelect(); renderBookmarks();
-          if(document.getElementById('detailPage').style.display === "block" && window.currentOpenMangaFbId) {
-              openManga(window.currentOpenMangaFbId);
-          }
+          if(document.getElementById('detailPage').style.display === "block" && window.currentOpenMangaFbId) { openManga(window.currentOpenMangaFbId); }
       });
   }
 
   document.getElementById('mainContentWrapper').addEventListener('scroll', (e) => {
       const { scrollTop, scrollHeight, clientHeight } = e.target;
-      if (scrollTop + clientHeight >= scrollHeight - 300) {
-          if (window.mangas.length >= currentLimit) { currentLimit += 6; startMangaListener(); }
-      }
+      if (scrollTop + clientHeight >= scrollHeight - 300) { if (window.mangas.length >= currentLimit) { currentLimit += 6; startMangaListener(); } }
   });
 
   startMangaListener();
@@ -1192,10 +1256,7 @@ input:checked + .slider:before { transform: translateX(20px); }
                     </div>
                 </div>`).join('');
             dropdown.style.display = "flex";
-        } else {
-            dropdown.innerHTML = `<div style="padding:15px; text-align:center; font-size:12px; opacity:0.5;">No results found</div>`;
-            dropdown.style.display = "flex";
-        }
+        } else { dropdown.innerHTML = `<div style="padding:15px; text-align:center; font-size:12px; opacity:0.5;">No results found</div>`; dropdown.style.display = "flex"; }
     }, 300);
   }
 
@@ -1206,17 +1267,17 @@ input:checked + .slider:before { transform: translateX(20px); }
     const rating = document.getElementById('mangaRating').value || "4.9";
     const btn = document.getElementById('createBtn');
     const selectedGenres = Array.from(document.querySelectorAll('.genre-checkbox:checked')).map(cb => cb.value);
-    if(!title || !imgInput.files[0] || selectedGenres.length === 0) return showStatus("Required fields/Genres empty","fail");
-    btn.disabled = true; showStatus("Optimizing & Uploading...", "success");
+    if(!title || !imgInput.files[0] || selectedGenres.length === 0) return showStatus("Required fields empty","fail");
+    btn.disabled = true; showStatus("Uploading...", "success");
     try {
       const imageUrl = await processAndUpload(imgInput.files[0]);
       const now = Date.now();
       await addDoc(collection(db, "mangas"), { 
-        id: now, name: title, img: imageUrl, rating: rating, genres: selectedGenres, description: description || "No description available.", chapters: [], uploadedAt: new Date().toLocaleString(), lastUpdated: now 
+        id: now, name: title, img: imageUrl, rating: rating, genres: selectedGenres, description: description || "No description.", chapters: [], uploadedAt: new Date().toLocaleString(), lastUpdated: now 
       });
       document.getElementById('mangaTitle').value = ""; document.getElementById('mangaDesc').value = ""; imgInput.value = ""; document.querySelectorAll('.genre-checkbox').forEach(cb => cb.checked = false);
       showStatus("Manga Created! ✨","success");
-    } catch(e) { showStatus("Cloud Error","fail"); }
+    } catch(e) { showStatus("Error","fail"); }
     btn.disabled = false;
   }
 
@@ -1230,61 +1291,58 @@ input:checked + .slider:before { transform: translateX(20px); }
     const cloudUrls = [];
     try {
       for (let i = 0; i < files.length; i++) {
-          showStatus(`Optimizing: Page ${i + 1} / ${files.length} ... 🍅`, "success");
-          const url = await processAndUpload(files[i]);
-          cloudUrls.push(url);
+          showStatus(`Optimizing: Page ${i + 1} / ${files.length}`, "success");
+          const url = await processAndUpload(files[i]); cloudUrls.push(url);
       }
       const targetManga = window.mangas.find(m => m.fbId === selectedFbId);
       const now = Date.now();
       const updatedChapters = [...(targetManga.chapters || []), { title: cTitle, pages: cloudUrls, views: 0, timestamp: now }];
       await updateDoc(doc(db, "mangas", selectedFbId), { chapters: updatedChapters, lastUpdated: now });
       document.getElementById('chapterTitle').value = ""; document.getElementById('chapterFiles').value = ""; document.getElementById('fileStatus').innerText = "No files selected";
-      showStatus(`Published ${files.length} pages! ✅`, "success");
+      showStatus(`Published! ✅`, "success");
     } catch(e) { showStatus("Upload Failed!", "fail"); } finally { btn.disabled = false; }
   }
 
   window.deleteManga = async function(fbId) { 
-    try { showStatus("Removing Manga...", "success"); await deleteDoc(doc(db, "mangas", fbId)); showStatus("Removed! ✨", "success"); } catch(e) { showStatus("Error", "fail"); } 
+    try { showStatus("Removing...", "success"); await deleteDoc(doc(db, "mangas", fbId)); showStatus("Removed!", "success"); } catch(e) { showStatus("Error", "fail"); } 
   }
 
   window.deleteChapter = async function(mId, idx) { 
     try { 
       const m = window.mangas.find(x => x.fbId === mId); 
       const up = m.chapters.filter((_, i) => i !== idx); 
-      showStatus("Deleting Chapter...", "success");
-      await updateDoc(doc(db, "mangas", mId), { chapters: up }); 
-      showStatus("Deleted! 🔥", "success"); 
+      await updateDoc(doc(db, "mangas", mId), { chapters: up }); showStatus("Deleted!", "success"); 
     } catch(e) { showStatus("Error", "fail"); } 
   }
 
   window.enterSite = () => {
     const intro = document.getElementById('intro');
-    const lobby = document.getElementById('mainContentWrapper');
     intro.classList.add("fade-out");
     setTimeout(() => { 
         intro.style.display = "none"; 
-        lobby.classList.add("animate-in"); 
-
-        history.replaceState({ lobbyId: 'mainContentWrapper' }, "", "");
-        
+        document.querySelectorAll('.app-lobby').forEach(l => l.style.display = 'none');
         const savedLobby = localStorage.getItem('activeLobbyId');
         const savedMangaFbId = localStorage.getItem('currentOpenMangaFbId');
         const savedChapterIdx = localStorage.getItem('currentReadChapterIdx');
-        
+
         if (savedLobby && savedLobby !== 'intro' && savedLobby !== 'mainContentWrapper') {
             if (savedLobby === 'readingLobby' && savedMangaFbId && savedChapterIdx !== null) {
-                window.currentOpenMangaFbId = savedMangaFbId;
+                window.currentOpenMangaFbId = savedMangaFbId; 
                 openReadingLobby(savedMangaFbId, parseInt(savedChapterIdx));
             } 
             else if (savedLobby === 'detailPage' && savedMangaFbId) { openManga(savedMangaFbId); } 
             else if (savedLobby === 'bookmarkPage') { openBookmarkLobby(); }
             else { window.navigateTo('mainContentWrapper'); }
-        } else { 
-            document.getElementById('mainContentWrapper').style.display = 'block';
+        } else {
+            const main = document.getElementById('mainContentWrapper');
+            main.style.display = 'block';
+            main.classList.add("animate-in");
             localStorage.setItem('activeLobbyId', 'mainContentWrapper');
+            history.replaceState({ lobbyId: 'mainContentWrapper' }, "", "");
         }
         
-        shouldAnimateMangas = true; renderPublic();
+        shouldAnimateMangas = true; 
+        renderPublic();
         setTimeout(() => { shouldAnimateMangas = false; }, 2000);
     }, 800);
   }
@@ -1304,8 +1362,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     setTimeout(() => {
         document.body.classList.toggle("light");
         const isLight = document.body.classList.contains("light");
-        sun.style.display = isLight ? "block" : "none";
-        moon.style.display = isLight ? "none" : "block";
+        sun.style.display = isLight ? "block" : "none"; moon.style.display = isLight ? "none" : "block";
         iconWrapper.classList.remove('rotate-anim');
     }, 300);
   }
@@ -1313,17 +1370,14 @@ input:checked + .slider:before { transform: translateX(20px); }
   window.toggleAdmin = () => {
     const sidebar = document.getElementById('adminSidebar');
     sidebar.classList.toggle("show");
-    
-    // Sidebar ပွင့်လာတိုင်း Block စနစ်အတွက် History အသစ် တစ်ခု ထည့်ပေးမယ်
-    if(sidebar.classList.contains('show')) {
-        history.pushState(null, "", "");
-    }
+    if(sidebar.classList.contains('show')) { history.pushState({ isMenuOpen: true }, "", ""); }
   }
 
   const ADMIN_KEY = "teamtomatokioshi";
   window.checkPass = () => { 
     const input = document.getElementById('adminPass').value.trim();
     if(input === ADMIN_KEY){ 
+        isAdminLoggedIn = true; 
         document.getElementById('loginBox').style.display="none"; 
         document.getElementById('adminForm').style.display="block"; 
         showStatus("Access Granted! ✨","success"); 
@@ -1345,16 +1399,18 @@ input:checked + .slider:before { transform: translateX(20px); }
       return (Date.now() - manga.lastUpdated) < (24 * 60 * 60 * 1000);
   }
 
-  function renderPublic(){
+  window.renderPublic = function(){
     if(window.mangas.length === 0) return;
     document.getElementById('mangaList').innerHTML = window.mangas.map((m, i) => {
-      const animClass = shouldAnimateMangas ? 'animate' : '';
       const delay = shouldAnimateMangas ? `style="animation-delay: ${0.8 + (i * 0.05)}s"` : '';
       return `
-      <div class="manga ${animClass}" onclick="openManga('${m.fbId}')" ${delay}>
-        ${shouldShowNewBadge(m) ? '<div class="new-chapter-badge">New Chapter Update</div>' : ''}
+      <div class="manga ${shouldAnimateMangas ? 'animate' : ''}" onclick="openManga('${m.fbId}')" ${delay}>
+        ${shouldShowNewBadge(m) ? '<div class="new-chapter-badge">New Update</div>' : ''}
         ${isNewCover(m) ? '<div class="premium-cover-badge">New</div>' : ''}
-        <img src="${m.img}" loading="lazy"><p>${m.name}</p>
+        <div class="skeleton-loader" style="width:100%; aspect-ratio:3/4; border-radius:10px; overflow:hidden;">
+            <img class="fade-in-img" src="${m.img}" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton-loader')">
+        </div>
+        <p>${m.name}</p>
       </div>`;
     }).join('');
   }
@@ -1366,7 +1422,12 @@ input:checked + .slider:before { transform: translateX(20px); }
     const bar = document.getElementById('featuredBar'), track = document.getElementById('featuredTrack'), title = document.getElementById('popularTitleBar'), divider = document.getElementById('premDivider');
     if(window.mangas.length > 0) { 
       bar.style.display="block"; title.style.display="flex"; divider.style.display="block";
-      const itemsHtml = window.mangas.map(m => `<div class="featuredItem" onclick="openManga('${m.fbId}')"><img src="${m.img}" loading="lazy"></div>`).join('');
+      const itemsHtml = window.mangas.map(m => `
+        <div class="featuredItem" onclick="openManga('${m.fbId}')">
+            <div class="skeleton-loader" style="width:145px; height:205px; border-radius:4px; overflow:hidden;">
+                <img class="fade-in-img" src="${m.img}" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton-loader')">
+            </div>
+        </div>`).join('');
       track.innerHTML = itemsHtml + itemsHtml + itemsHtml; 
       startAutoScroll(); initDragEvents(bar, track);
     }
@@ -1375,7 +1436,7 @@ input:checked + .slider:before { transform: translateX(20px); }
   function startAutoScroll() {
     cancelAnimationFrame(animationId);
     const track = document.getElementById('featuredTrack');
-    function step() { if (!isDown && track) { currentPos -= scrollSpeed; const singleSetWidth = track.scrollWidth / 3; if (Math.abs(currentPos) >= singleSetWidth) currentPos = 0; track.style.transform = `translateX(${currentPos}px)`; } animationId = requestAnimationFrame(step); }
+    function step() { if (!isDown && track) { currentPos -= scrollSpeed; const sw = track.scrollWidth / 3; if (Math.abs(currentPos) >= sw) currentPos = 0; track.style.transform = `translateX(${currentPos}px)`; } animationId = requestAnimationFrame(step); }
     animationId = requestAnimationFrame(step);
   }
 
@@ -1391,13 +1452,17 @@ input:checked + .slider:before { transform: translateX(20px); }
   function renderShowcase(){
     const sc = document.getElementById('showcase');
     if(window.mangas.length > 0) sc.style.display="block";
-    document.getElementById('showcaseTrack').innerHTML = window.mangas.map(m => `<div class="showcaseItem"><img src="${m.img}"></div>`).join('');
+    document.getElementById('showcaseTrack').innerHTML = window.mangas.map(m => `
+        <div class="showcaseItem">
+            <div class="skeleton-loader" style="width:100%; height:100%;">
+                <img class="fade-in-img" src="${m.img}" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton-loader')">
+            </div>
+        </div>`).join('');
     if(window.showcaseTimer) clearInterval(window.showcaseTimer);
-    let index = 0;
+    let idx = 0;
     window.showcaseTimer = setInterval(() => { 
-        index = (index + 1) % window.mangas.length; 
-        const track = document.getElementById('showcaseTrack');
-        if(track) track.style.transform = `translateX(-${index * 100}%)`; 
+        idx = (idx + 1) % window.mangas.length; const track = document.getElementById('showcaseTrack');
+        if(track) track.style.transform = `translateX(-${idx * 100}%)`; 
     }, 5000);
   }
 
@@ -1408,16 +1473,9 @@ input:checked + .slider:before { transform: translateX(20px); }
           <img src="${m.img}" loading="lazy">
           <div class="historyInfo">
             <b style="font-size:14px; color: var(--text);">${m.name}</b><br>
-            <small style="opacity:0.5; font-size:10px; display:block; margin-top:2px;">📅 ${m.uploadedAt || 'Recently'}</small>
+            <small style="opacity:0.5; font-size:10px;">📅 ${m.uploadedAt || 'Recently'}</small>
           </div>
-          <div class="manga-del-btn" onclick="deleteManga('${m.fbId}')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-              <line x1="10" y1="11" x2="10" y2="17"></line>
-              <line x1="14" y1="11" x2="14" y2="17"></line>
-            </svg>
-          </div>
+          <div class="manga-del-btn" onclick="deleteManga('${m.fbId}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></div>
         </div>
         <div class="chapter-badge-container">
           ${(m.chapters || []).map((ch, idx) => `<div class="chapter-chip"><span>${ch.title}</span><div class="del-btn" onclick="deleteChapter('${m.fbId}', ${idx})">✕</div></div>`).join('')}
@@ -1434,8 +1492,7 @@ input:checked + .slider:before { transform: translateX(20px); }
         try {
           const m = window.mangas.find(x => x.fbId === mangaId);
           if(m && m.chapters && m.chapters[chapterIdx]) {
-            const upChapters = [...m.chapters];
-            upChapters[chapterIdx].views = (upChapters[chapterIdx].views || 0) + 1;
+            const upChapters = [...m.chapters]; upChapters[chapterIdx].views = (upChapters[chapterIdx].views || 0) + 1;
             await updateDoc(doc(db, "mangas", mangaId), { chapters: upChapters });
           }
         } catch(e) { }
@@ -1443,25 +1500,27 @@ input:checked + .slider:before { transform: translateX(20px); }
   }
 
   function isChapterRead(mangaId, chapterIdx) {
-    let readHistory = JSON.parse(localStorage.getItem('read_chapters') || "{}");
-    return readHistory[mangaId] && readHistory[mangaId].includes(chapterIdx);
+    let rh = JSON.parse(localStorage.getItem('read_chapters') || "{}");
+    return rh[mangaId] && rh[mangaId].includes(chapterIdx);
   }
 
   window.openManga = function(fbId){
     if (isDown) return;
     localStorage.setItem('currentOpenMangaFbId', fbId);
-    sessionStorage.setItem('active_lobby_source', document.getElementById('bookmarkPage').style.display === "block" ? 'bookmark' : 'main');
     window.currentOpenMangaFbId = fbId;
-    const m = window.mangas.find(x => x.fbId === fbId);
-    if(!m) return;
-    
+    const m = window.mangas.find(x => x.fbId === fbId); if(!m) return;
     window.navigateTo('detailPage');
-
+    updateBreadcrumbs([{ name: m.name, action: `openManga('${fbId}')` }]);
     const genresHtml = (m.genres || ["Action"]).map(g => `<span class="genre-tag">${g}</span>`).join('');
     const isBookmarked = JSON.parse(localStorage.getItem('bookmarks') || "[]").includes(fbId);
     document.getElementById('lobbyInfo').innerHTML = `
       <div class="lobby-top">
-          <div class="lobby-left"><img src="${m.img}"><h2 class="manga-title">${m.name}</h2></div>
+          <div class="lobby-left">
+            <div class="skeleton-loader" style="width:130px; aspect-ratio:3/4; border-radius:10px; overflow:hidden;">
+                <img class="fade-in-img" src="${m.img}" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton-loader')">
+            </div>
+            <h2 class="manga-title">${m.name}</h2>
+          </div>
           <div class="lobby-right">
             <div class="manga-rating">⭐ ${m.rating || '4.9'}</div>
             <div class="manga-genres">${genresHtml}</div>
@@ -1475,79 +1534,59 @@ input:checked + .slider:before { transform: translateX(20px); }
       m.chapters.forEach((ch, idx) => {
         html += `
           <div class="chapter-item ${isChapterRead(fbId, idx) ? 'read' : ''}" onclick="openReadingLobby('${fbId}', ${idx})">
-            <span>${ch.title}</span><div class="view-count"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" opacity="0.7"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg> ${ch.views || 0}</div>
+            <span>${ch.title}</span><div class="view-count">👁️ ${ch.views || 0}</div>
           </div>`;
       });
     }
     document.getElementById('chapterItemsContainer').innerHTML = html;
   }
 
-  let currentReadMode = 'scroll'; 
-  let currentPageIndex = 0;
-  let totalPages = 0;
-  let lastScrollTop = 0;
+  let currentReadMode = 'scroll', currentPageIndex = 0, totalPages = 0, lastScrollTop = 0;
 
   window.openReadingLobby = async function(fbId, chIdx) {
-      const m = window.mangas.find(x => x.fbId === fbId);
-      if(!m) return;
+      const m = window.mangas.find(x => x.fbId === fbId); if(!m) return;
       const ch = m.chapters[chIdx];
       await markChapterReadAndCount(fbId, chIdx);
-      localStorage.setItem('currentOpenMangaFbId', fbId);
       localStorage.setItem('currentReadChapterIdx', chIdx);
-      
       window.navigateTo('readingLobby');
-
+      updateBreadcrumbs([{ name: m.name, action: `openManga('${fbId}')` }, { name: ch.title, action: `openReadingLobby('${fbId}', ${chIdx})` }]);
       document.getElementById('readingTitle').innerText = ch.title;
-      totalPages = ch.pages.length;
-      currentPageIndex = 0;
-      document.getElementById('sidebarChapterList').innerHTML = m.chapters.map((c, i) => `<div class="sidebar-chapter-opt ${i === chIdx ? 'active' : ''}" onclick="openReadingLobby('${fbId}', ${i}); toggleReadingSidebar();">${c.title}</div>`).join('');
-      document.getElementById('backToDetailBtn').onclick = () => closeReadingLobby();
+      totalPages = ch.pages.length; currentPageIndex = 0;
+      document.getElementById('sidebarChapterList').innerHTML = m.chapters.map((c, i) => `<div class="sidebar-chapter-opt ${i === chIdx ? 'active' : ''}" onclick="openReadingLobby('${fbId}', ${i}); manualCloseSidebar();">${c.title}</div>`).join('');
       const nextBtn = document.getElementById('nextChapterBtn');
       if(chIdx + 1 < m.chapters.length) { nextBtn.disabled = false; nextBtn.innerText = "Next"; nextBtn.onclick = () => openReadingLobby(fbId, chIdx + 1); } 
       else { nextBtn.disabled = true; nextBtn.innerText = "End"; }
-      const headbarToggle = document.getElementById('headbar-toggle');
+      const hbToggle = document.getElementById('headbar-toggle');
       const savedStatus = localStorage.getItem('headBarStatus') !== 'off';
-      headbarToggle.checked = savedStatus;
-      applyHeadBarSetting(savedStatus);
-      applyReadMode();
-      renderPagesSequentially(ch.pages);
+      hbToggle.checked = savedStatus; applyHeadBarSetting(savedStatus);
+      applyReadMode(); renderPagesSequentially(ch.pages);
   }
 
   function applyHeadBarSetting(show) {
-      const header = document.getElementById('readingHeader');
-      const container = document.getElementById('pagesContainer');
-      if(show) { header.classList.remove('hidden'); container.style.marginTop = "80px"; } 
-      else { header.classList.add('hidden'); container.style.marginTop = "0"; }
+      const h = document.getElementById('readingHeader'), c = document.getElementById('pagesContainer');
+      if(show) { h.classList.remove('hidden'); c.style.marginTop = "80px"; } 
+      else { h.classList.add('hidden'); c.style.marginTop = "0"; }
   }
 
-  document.getElementById('headbar-toggle').addEventListener('change', function() {
-      applyHeadBarSetting(this.checked);
-      localStorage.setItem('headBarStatus', this.checked ? 'on' : 'off');
-  });
+  document.getElementById('headbar-toggle').addEventListener('change', function() { applyHeadBarSetting(this.checked); localStorage.setItem('headBarStatus', this.checked ? 'on' : 'off'); });
 
   document.getElementById('readingLobby').addEventListener('scroll', function(e) {
       if(currentReadMode !== 'scroll') return;
-      const st = e.target.scrollTop;
-      const header = document.getElementById('readingHeader');
-      const isAutoOff = localStorage.getItem('headBarStatus') === 'off';
-      if(isAutoOff) {
-          if (st > lastScrollTop && st > 100) { header.classList.add('hidden'); } 
-          else { header.classList.remove('hidden'); }
+      const st = e.target.scrollTop, h = document.getElementById('readingHeader');
+      if(localStorage.getItem('headBarStatus') === 'off') {
+          if (st > lastScrollTop && st > 100) { h.classList.add('hidden'); } 
+          else { h.classList.remove('hidden'); }
       }
       lastScrollTop = st <= 0 ? 0 : st;
   });
 
   async function renderPagesSequentially(pages) {
-      const container = document.getElementById('pagesContainer');
-      container.innerHTML = ''; 
+      const container = document.getElementById('pagesContainer'); container.innerHTML = ''; 
       const imgElements = [];
-      pages.forEach((p, index) => {
+      pages.forEach((p) => {
           const wrapper = document.createElement('div');
           wrapper.className = currentReadMode === 'scroll' ? 'page-placeholder' : 'page-item';
-          const img = document.createElement('img');
-          img.style.opacity = "0";
-          img.style.transition = "opacity 0.5s ease";
-          wrapper.appendChild(img); container.appendChild(wrapper);
+          const img = document.createElement('img'); wrapper.appendChild(img); container.appendChild(wrapper);
           imgElements.push({ img, url: p, wrapper });
       });
       for (let i = 0; i < imgElements.length; i++) {
@@ -1561,32 +1600,25 @@ input:checked + .slider:before { transform: translateX(20px); }
   window.toggleReadingSidebar = (e) => {
       if(e) e.stopPropagation();
       const sidebar = document.getElementById('readingSettingsSidebar');
-      sidebar.classList.toggle('show');
-      
-      // Sidebar ပွင့်လာတိုင်း Block စနစ်အတွက် History အသစ် တစ်ခု ထည့်ပေးမယ်
-      if(sidebar.classList.contains('show')) {
-          history.pushState(null, "", "");
-      }
+      if(!sidebar.classList.contains('show')) { sidebar.classList.add('show'); history.pushState({ isMenuOpen: true }, "", ""); } 
+      else { manualCloseSidebar(); }
+  };
+
+  window.manualCloseSidebar = function() {
+      const rs = document.getElementById('readingSettingsSidebar'), as = document.getElementById('adminSidebar');
+      if(rs && rs.classList.contains('show')) { rs.classList.remove('show'); history.back(); }
+      if(as && as.classList.contains('show')) { as.classList.remove('show'); history.back(); }
   };
 
   window.toggleFullScreenLobby = () => {
-    const header = document.getElementById('readingHeader');
-    const btn = document.getElementById('lobbyToggleBtn');
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().then(() => {
-            header.style.display = 'none';
-            btn.innerText = "Exit Full Screen"; btn.classList.add('active');
-        });
-    } else { document.exitFullscreen(); }
-    toggleReadingSidebar();
+    const h = document.getElementById('readingHeader'), btn = document.getElementById('lobbyToggleBtn');
+    if (!document.fullscreenElement) { document.documentElement.requestFullscreen().then(() => { h.style.display = 'none'; btn.innerText = "Exit Full Screen"; btn.classList.add('active'); }); } 
+    else { document.exitFullscreen(); }
+    manualCloseSidebar();
   };
 
   document.addEventListener('fullscreenchange', () => {
-      if (!document.fullscreenElement) {
-          document.getElementById('readingHeader').style.display = 'flex';
-          const btn = document.getElementById('lobbyToggleBtn');
-          btn.innerText = "Enable Full Screen"; btn.classList.remove('active');
-      }
+      if (!document.fullscreenElement) { document.getElementById('readingHeader').style.display = 'flex'; const btn = document.getElementById('lobbyToggleBtn'); btn.innerText = "Enable Full Screen"; btn.classList.remove('active'); }
   });
 
   window.setReadMode = function(mode) {
@@ -1595,9 +1627,7 @@ input:checked + .slider:before { transform: translateX(20px); }
       document.getElementById('modePage').classList.toggle('active', mode === 'page');
       const m = window.mangas.find(x => x.fbId === window.currentOpenMangaFbId);
       const chIdx = parseInt(localStorage.getItem('currentReadChapterIdx'));
-      applyReadMode(); 
-      renderPagesSequentially(m.chapters[chIdx].pages);
-      toggleReadingSidebar();
+      applyReadMode(); renderPagesSequentially(m.chapters[chIdx].pages); manualCloseSidebar();
   };
 
   function applyReadMode() {
@@ -1613,10 +1643,7 @@ input:checked + .slider:before { transform: translateX(20px); }
       container.ontouchmove = e => {
           if (!isMoving) return;
           const currentX = e.touches[0].clientX, currentY = e.touches[0].clientY;
-          if (Math.abs(currentX - touchStartX) > Math.abs(currentY - touchStartY)) {
-            container.style.transform = `translateX(${-(currentPageIndex * window.innerWidth) + (currentX - touchStartX)}px)`;
-            e.preventDefault();
-          }
+          if (Math.abs(currentX - touchStartX) > Math.abs(currentY - touchStartY)) { container.style.transform = `translateX(${-(currentPageIndex * window.innerWidth) + (currentX - touchStartX)}px)`; e.preventDefault(); }
       };
       container.ontouchend = e => {
           if (!isMoving) return; isMoving = false;
@@ -1637,23 +1664,8 @@ input:checked + .slider:before { transform: translateX(20px); }
       };
   }
 
-  window.closeReadingLobby = () => { 
-    if(document.fullscreenElement) document.exitFullscreen();
-    localStorage.removeItem('currentReadChapterIdx'); 
-    history.back();
-  }
-  
-  window.onclick = (e) => { 
-    const sidebar = document.getElementById('readingSettingsSidebar');
-    if(sidebar.classList.contains('show') && !sidebar.contains(e.target) && !e.target.closest('.iconBtn')) { 
-        sidebar.classList.remove('show'); 
-    }
-  };
-
-  window.closeDetail = () => { 
-    localStorage.removeItem('currentOpenMangaFbId');
-    history.back();
-  }
+  window.closeReadingLobby = () => { if(document.fullscreenElement) document.exitFullscreen(); localStorage.removeItem('currentReadChapterIdx'); history.back(); }
+  window.closeDetail = () => { localStorage.removeItem('currentOpenMangaFbId'); history.back(); }
 
   window.toggleBookmark = function(fbId) {
     let b = JSON.parse(localStorage.getItem('bookmarks') || "[]");
@@ -1662,26 +1674,23 @@ input:checked + .slider:before { transform: translateX(20px); }
     localStorage.setItem('bookmarks', JSON.stringify(b)); openManga(fbId); renderBookmarks();
   }
   
-  window.openBookmarkLobby = function() { 
-    document.getElementById('adminSidebar').classList.remove('show'); 
-    window.navigateTo('bookmarkPage'); renderBookmarks(); 
-  }
-  
-  window.closeBookmarkLobby = function() { 
-    history.back();
-  }
+  window.openBookmarkLobby = function() { document.getElementById('adminSidebar').classList.remove('show'); window.navigateTo('bookmarkPage'); renderBookmarks(); }
+  window.closeBookmarkLobby = function() { history.back(); }
 
   function renderBookmarks() {
-    const b = JSON.parse(localStorage.getItem('bookmarks') || "[]");
-    const container = document.getElementById('bookmarkList');
+    const b = JSON.parse(localStorage.getItem('bookmarks') || "[]"), container = document.getElementById('bookmarkList');
     if(b.length === 0) { container.innerHTML = "<p style='grid-column: 1/-1; text-align:center; opacity:0.4; padding:50px;'>No bookmarks yet.</p>"; return; }
     container.innerHTML = window.mangas.filter(m => b.includes(m.fbId)).map(m => `
       <div class="manga" onclick="openManga('${m.fbId}')">
-        ${shouldShowNewBadge(m) ? '<div class="new-chapter-badge">New Chapter Update</div>' : ''}
+        ${shouldShowNewBadge(m) ? '<div class="new-chapter-badge">New Update</div>' : ''}
         ${isNewCover(m) ? '<div class="premium-cover-badge">New</div>' : ''}
-        <img src="${m.img}" loading="lazy"><p>${m.name}</p>
+        <div class="skeleton-loader" style="width:100%; aspect-ratio:3/4; border-radius:10px; overflow:hidden;">
+            <img class="fade-in-img" src="${m.img}" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton-loader')">
+        </div>
+        <p>${m.name}</p>
       </div>`).join('');
   }
 </script>
 </body>
 </html>
+

@@ -7,10 +7,16 @@
   "theme_color": "#ff2a2a",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/597/597177.png",
+      "src": "IMG_20260201_100503_640.jpg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any maskable"
+    },
+    {
+      "src": "IMG_20260201_100503_640.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
     }
   ]
 }

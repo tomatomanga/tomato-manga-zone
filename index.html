@@ -171,19 +171,6 @@ html, body {
   border-radius: 10px;
 }
 
-/* 300kbps OPTIMIZATION: Skeleton for reader */
-.page-item, .scroll-item {
-    min-height: 450px;
-    background: #111;
-    background-image: linear-gradient(90deg, #111 25%, #1a1a1a 50%, #111 75%);
-    background-size: 200% 100%;
-    animation: shimmer 2s infinite linear;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
 #intro { 
   position:fixed; inset:0; background:black; display:flex; 
   flex-direction:column; justify-content:center; align-items:center; 
@@ -215,6 +202,7 @@ html, body {
 
 #headerInner{ height:80px; display:flex; align-items:center; padding:0 18px; justify-content: space-between; overflow: visible; position: relative;}
 
+/* --- UPDATED SEARCH CONTAINER --- */
 #searchContainer {
   position: absolute; left: 18px; right: 80px; height: 50px;
   background: var(--card); border-radius: 15px; border: 1px solid var(--accent);
@@ -229,6 +217,7 @@ html, body {
 }
 .searchClose { color: var(--accent); font-weight: 900; cursor: pointer; padding: 5px; font-size: 20px;}
 
+/* PREMIUM SEARCH DROPDOWN LIST */
 #searchDropdown {
     position: absolute;
     top: calc(100% + 5px);
@@ -343,6 +332,7 @@ html, body {
   display: none; 
 }
 
+/* --- NEW PREMIUM TITLE STYLE --- */
 .manga-list-header {
   padding: 30px 25px 5px;
   display: flex;
@@ -483,6 +473,7 @@ html, body {
 
 .backBtn{background:var(--card);color:white;padding:12px 20px;margin: 20px;border-radius:30px;cursor:pointer;border:1px solid rgba(255,255,255,0.1); font-weight: bold; transition: 0.3s; display: inline-block;}
 
+/* --- CHAPTER LIST SECTION --- */
 .chapter-list-section {
     margin-top: 20px;
     padding: 0 20px 40px;
@@ -532,6 +523,7 @@ html, body {
     -ms-interpolation-mode: bicubic;
     transform: translateZ(0);
     will-change: transform;
+    filter: sharpness(1.05);
     width: 100%; 
     display: block; 
     height: auto;
@@ -625,6 +617,7 @@ html, body {
 .setting-choice { padding: 12px; border-radius: 8px; cursor: pointer; text-align: center; font-size: 14px; font-weight: bold; }
 .setting-choice.active { background: var(--accent); color: white; }
 
+/* --- ADMIN PANEL PREMIUM RE-DESIGN --- */
 #adminSidebar { 
     position:fixed; top:0; right:-320px; width:320px; height:100%; 
     background: #0a0a0a; backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); 
@@ -692,6 +685,7 @@ html, body {
 .del-btn { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: rgba(255,0,0,0.1); color: #ff4444; border-radius: 5px; cursor: pointer; transition: 0.2s;}
 .del-btn:hover { background: #ff0000; color: white; }
 
+/* PREMIUM TRASH ICON STYLE */
 .manga-del-btn {
   margin-left: auto; color: #ff4444; cursor: pointer; padding: 8px; border-radius: 8px;
   background: rgba(255, 68, 68, 0.1); border: 1px solid rgba(255, 68, 68, 0.2);
@@ -874,8 +868,12 @@ html, body {
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc, increment, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+  // CLOUDINARY CONFIG
+  const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dxbelpram/image/upload";
+  const UPLOAD_PRESET = "manga_upload";
+
   const firebaseConfig = {
-    apiKey: "AIzaSyBBr71Dk5pFn8UkIn5DOoBYeQWPvFcKX4", 
+    apiKey: "AIzaSyBBr71Dk5pFn8Uk1nn5D0oBYeQWPvFcKX4",
     authDomain: "tomato-manga-zone.firebaseapp.com",
     projectId: "tomato-manga-zone",
     storageBucket: "tomato-manga-zone.firebasestorage.app",
@@ -888,6 +886,7 @@ html, body {
   const db = getFirestore(app);
   window.mangas = [];
   
+  // INFINITE SCROLL SETTINGS
   let currentLimit = 6;
   let unsubscribeManga = null;
   let shouldAnimateMangas = true;
@@ -927,51 +926,23 @@ html, body {
   const list = document.getElementById('mangaList');
   list.innerHTML = Array(6).fill(0).map(() => `<div class="skeleton" style="width:100%; aspect-ratio:3/4;"></div>`).join('');
   
-  // --- CLOUDFLARE PROXY INTEGRATED processAndUpload ---
+  // UPDATED: CLOUDINARY UPLOAD FUNCTION
   async function processAndUpload(file) {
-      return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.readAsDataURL(file);
-          reader.onload = (event) => {
-              const img = new Image();
-              img.src = event.target.result;
-              img.onload = async () => {
-                  const canvas = document.createElement('canvas');
-                  const ctx = canvas.getContext('2d');
-                  let width = img.width, height = img.height;
-                  const maxDim = 2000;
-                  if (width > maxDim || height > maxDim) {
-                      const ratio = Math.min(maxDim / width, maxDim / height);
-                      width *= ratio; height *= ratio;
-                  }
-                  canvas.width = width; canvas.height = height;
-                  ctx.imageSmoothingEnabled = true;
-                  ctx.imageSmoothingQuality = 'high';
-                  ctx.drawImage(img, 0, 0, width, height);
-                  canvas.toBlob(async (blob) => {
-                      try {
-                          let formData = new FormData();
-                          formData.append("image", blob);
-                          
-                          // မင်းရဲ့ Cloudflare Worker Link ကို ဒီမှာ အသုံးပြုထားပါတယ်
-                          const WORKER_URL = "https://tomato-proxy.canchicanchi321.workers.dev";
-                          
-                          const res = await fetch(WORKER_URL, { 
-                              method: "POST", 
-                              body: formData 
-                          });
-                          
-                          const data = await res.json();
-                          if (data.success) {
-                              resolve(data.data.url);
-                          } else {
-                              reject("Upload failed through Worker");
-                          }
-                      } catch (e) { reject(e); }
-                  }, 'image/jpeg', 0.9);
-              };
-          };
-      });
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", UPLOAD_PRESET);
+
+      try {
+          const res = await fetch(CLOUDINARY_URL, {
+              method: "POST",
+              body: formData
+          });
+          const data = await res.json();
+          return data.secure_url;
+      } catch (e) {
+          console.error("Cloudinary Error:", e);
+          throw e;
+      }
   }
 
   const introBg = document.getElementById('introBg');
@@ -1038,7 +1009,7 @@ html, body {
     const btn = document.getElementById('createBtn');
     const selectedGenres = Array.from(document.querySelectorAll('.genre-checkbox:checked')).map(cb => cb.value);
     if(!title || !imgInput.files[0] || selectedGenres.length === 0) return showStatus("Required fields/Genres empty","fail");
-    btn.disabled = true; showStatus("Enhancing & Uploading...", "success");
+    btn.disabled = true; showStatus("Uploading to Cloudinary...", "success");
     try {
       const imageUrl = await processAndUpload(imgInput.files[0]);
       const now = Date.now();
@@ -1054,7 +1025,7 @@ html, body {
         lastUpdated: now 
       });
       document.getElementById('mangaTitle').value = ""; document.getElementById('mangaDesc').value = ""; imgInput.value = ""; document.querySelectorAll('.genre-checkbox').forEach(cb => cb.checked = false);
-      showStatus("Success! ✨","success");
+      showStatus("Manga Created! ✨","success");
     } catch(e) { showStatus("Cloud Error","fail"); }
     btn.disabled = false;
   }
@@ -1073,15 +1044,14 @@ html, body {
           showStatus(`Uploading: Page ${i + 1} / ${totalFiles} ... 🍅`, "success");
           const url = await processAndUpload(files[i]);
           cloudUrls.push(url);
-          if (i < totalFiles - 1) { await new Promise(resolve => setTimeout(resolve, 1000)); }
       }
       const targetManga = window.mangas.find(m => m.fbId === selectedFbId);
       const now = Date.now();
       const updatedChapters = [...(targetManga.chapters || []), { title: cTitle, pages: cloudUrls, views: 0, timestamp: now }];
       await updateDoc(doc(db, "mangas", selectedFbId), { chapters: updatedChapters, lastUpdated: now });
       document.getElementById('chapterTitle').value = ""; document.getElementById('chapterFiles').value = ""; document.getElementById('fileStatus').innerText = "No files selected";
-      showStatus(`Published ${totalFiles} pages successfully! ✅`, "success");
-    } catch(e) { showStatus("Upload Process Failed!", "fail"); } finally { btn.disabled = false; }
+      showStatus(`Published ${totalFiles} pages! ✅`, "success");
+    } catch(e) { showStatus("Upload Failed!", "fail"); } finally { btn.disabled = false; }
   }
 
   window.deleteManga = async function(fbId) { 
@@ -1331,31 +1301,19 @@ html, body {
       applyReadMode();
   }
 
-  async function renderPages(pages) {
+  function renderPages(pages) {
       const container = document.getElementById('pagesContainer');
       container.innerHTML = ''; 
-      
-      for (let i = 0; i < pages.length; i++) {
-          const div = document.createElement('div');
-          div.className = (currentReadMode === 'page') ? 'page-item' : 'scroll-item';
-          
+      pages.forEach((p, index) => {
           const img = document.createElement('img');
-          img.style.opacity = "0";
-          img.style.transition = "opacity 0.6s ease-in";
-          
-          if (i > 2) { img.loading = "lazy"; }
-          
-          img.src = pages[i];
-          
-          img.onload = () => {
-              img.style.opacity = "1";
-          };
-          
-          div.appendChild(img);
-          container.appendChild(div);
-
-          if (i < 2) await new Promise(r => setTimeout(r, 400));
-      }
+          if (index > 2) img.loading = "lazy";
+          img.src = p;
+          img.style.opacity = "0"; 
+          img.style.transition = "opacity 0.4s ease-in"; 
+          img.onload = () => { img.style.opacity = "1"; };
+          if(currentReadMode === 'scroll') container.appendChild(img);
+          else { const div = document.createElement('div'); div.className = 'page-item'; div.appendChild(img); container.appendChild(div); }
+      });
       container.style.transform = (currentReadMode === 'scroll') ? `none` : `translateX(0)`;
   }
 
@@ -1365,10 +1323,8 @@ html, body {
       document.getElementById('modePage').classList.toggle('active', mode === 'page');
       document.getElementById('settingsPopup').style.display = 'none';
       const m = window.mangas.find(x => x.fbId === window.currentOpenMangaFbId);
-      const chIdx = localStorage.getItem('currentReadChapterIdx');
-      if (chIdx !== null && m.chapters[chIdx]) {
-          applyReadMode(); renderPages(m.chapters[chIdx].pages);
-      }
+      const chIdx = m.chapters.findIndex(c => c.title === document.getElementById('readingTitle').innerText.replace(" ▾", ""));
+      applyReadMode(); renderPages(m.chapters[chIdx].pages);
   };
 
   function applyReadMode() {

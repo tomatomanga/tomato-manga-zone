@@ -591,7 +591,6 @@ input:checked + .slider:before { transform: translateX(20px); }
     if(!val.trim()) { dropdown.style.display = "none"; return; }
     searchTimer = setTimeout(() => {
         const queryStr = val.toLowerCase();
-        // Engine 5.0 Search Logic: Matches Title OR Description OR Genres
         const filtered = window.mangas.filter(m => 
             m.name.toLowerCase().includes(queryStr) || 
             (m.description && m.description.toLowerCase().includes(queryStr)) ||
@@ -974,7 +973,6 @@ input:checked + .slider:before { transform: translateX(20px); }
       lastScrollTop = st <= 0 ? 0 : st;
   });
 
-  /* --- ENGINE 5.0 SEQUENTIAL RENDERER WITH PRE-LOAD --- */
   async function renderPagesSequentially(pages) {
       const container = document.getElementById('pagesContainer'); container.innerHTML = ''; 
       const imgElements = [];
@@ -984,12 +982,10 @@ input:checked + .slider:before { transform: translateX(20px); }
           const img = document.createElement('img'); wrapper.appendChild(img); container.appendChild(wrapper);
           imgElements.push({ img, url: p, wrapper });
       });
-      // Predictive loading loop
       for (let i = 0; i < imgElements.length; i++) {
           await secureImageLoad(imgElements[i].img, imgElements[i].url);
           imgElements[i].wrapper.style.background = 'transparent';
           imgElements[i].wrapper.classList.remove('page-placeholder');
-          // Pre-load next 2 images ahead of current loading
           if(i+1 < pages.length) new Image().src = pages[i+1];
           if(i+2 < pages.length) new Image().src = pages[i+2];
       }

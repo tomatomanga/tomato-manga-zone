@@ -208,6 +208,10 @@ input:checked + .slider:before { transform: translateX(20px); }
 .genre-option { display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; color: #bbb; }
 .genre-option input { width: auto !important; margin: 0 !important; accent-color: var(--accent); }
 
+/* Custom Progress Bar for Upload */
+#uploadProgressWrapper { width: 100%; background: #222; border-radius: 10px; height: 10px; margin-top: 10px; display: none; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+#uploadProgressBar { width: 0%; height: 100%; background: #2196F3; transition: width 0.3s ease; box-shadow: 0 0 10px #2196F3; }
+
 #uploadStatus{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);padding:12px 25px;border-radius:50px;background:rgba(0,0,0,0.8);backdrop-filter:blur(10px);opacity:0;transition:.4s;z-index:7000; pointer-events: none; border: 1px solid rgba(255,255,255,0.1); font-weight: bold; text-align: center; min-width: 200px;}
 #uploadStatus.show{opacity:1; bottom: 50px;}
 
@@ -313,6 +317,11 @@ input:checked + .slider:before { transform: translateX(20px); }
     <label class="input-label">Manga Pages</label>
     <input type="file" id="chapterFiles" accept="image/*" multiple onchange="handleFiles(this.files)" style="display:none">
     <button onclick="document.getElementById('chapterFiles').click()" class="admin-secondary-btn">Select Page Images</button>
+    
+    <div id="uploadProgressWrapper">
+      <div id="uploadProgressBar"></div>
+    </div>
+    
     <p id="fileStatus" style="font-size:10px; text-align:center; margin-bottom:10px; opacity:0.5;">No files selected</p>
     <button onclick="uploadChapter()" id="uploadBtn" class="admin-primary-btn">Publish Chapter</button>
     <div class="admin-section-title">Database Management</div>
@@ -632,32 +641,69 @@ input:checked + .slider:before { transform: translateX(20px); }
     btn.disabled = false;
   }
 
+  /* --- MODIFIED: uploadChapter with Enhanced Notification & Progress Bar --- */
   window.uploadChapter = async function() {
     const selectedFbId = document.getElementById('mangaSelect').value;
     const cTitle = document.getElementById('chapterTitle').value;
     const files = Array.from(document.getElementById('chapterFiles').files);
     const btn = document.getElementById('uploadBtn');
+    const progressWrapper = document.getElementById('uploadProgressWrapper');
+    const progressBar = document.getElementById('uploadProgressBar');
+
     if(!selectedFbId || !cTitle || files.length === 0) return showStatus("Missing information!","fail");
+    
     btn.disabled = true; 
+    progressWrapper.style.display = 'block';
+    progressBar.style.width = '0%';
+    
     let cloudUrls = [];
-    const batchSize = 6; 
+    const totalFiles = files.length;
+    
     try {
-      showStatus(`Starting Fast Upload... ⚡`, "success");
-      for (let i = 0; i < files.length; i += batchSize) {
-          const currentBatch = files.slice(i, i + batchSize);
-          showStatus(`Uploading Batch: ${Math.floor(i/batchSize) + 1} 🚀`, "success");
-          const batchPromises = currentBatch.map(file => processAndUpload(file));
-          const results = await Promise.all(batchPromises);
-          cloudUrls = [...cloudUrls, ...results];
-          if (i + batchSize < files.length) { await new Promise(resolve => setTimeout(resolve, 1000)); }
+      showStatus(`Initializing Upload... ⚡`, "success");
+      
+      // Uploading one by one to show detailed progress (1/100)
+      for (let i = 0; i < totalFiles; i++) {
+          const currentNumber = i + 1;
+          
+          // Show Detailed Notification: Uploading photo 1/100
+          showStatus(`Uploading photo ${currentNumber}/${totalFiles} 🚀`, "success");
+          
+          // Real-time Progress Bar update
+          let progressPercent = (currentNumber / totalFiles) * 100;
+          progressBar.style.width = `${progressPercent}%`;
+
+          // Process and Upload single file
+          const result = await processAndUpload(files[i]);
+          cloudUrls.push(result);
       }
+
       const targetManga = window.mangas.find(m => m.fbId === selectedFbId);
       const now = Date.now();
       const updatedChapters = [...(targetManga.chapters || []), { title: cTitle, pages: cloudUrls, views: 0, timestamp: now }];
+      
       await updateDoc(doc(db, "mangas", selectedFbId), { chapters: updatedChapters, lastUpdated: now });
-      document.getElementById('chapterTitle').value = ""; document.getElementById('chapterFiles').value = ""; document.getElementById('fileStatus').innerText = "No files selected";
+      
+      // Clear inputs
+      document.getElementById('chapterTitle').value = ""; 
+      document.getElementById('chapterFiles').value = ""; 
+      document.getElementById('fileStatus').innerText = "No files selected";
+      
+      progressBar.style.background = "#4CAF50"; // Turn Green on success
       showStatus(`Chapter Published Successfully! ✅`, "success");
-    } catch(e) { showStatus("Upload Failed!", "fail"); } finally { btn.disabled = false; }
+      
+      setTimeout(() => { 
+          progressWrapper.style.display = 'none'; 
+          progressBar.style.width = '0%';
+          progressBar.style.background = "#2196F3"; 
+      }, 3000);
+
+    } catch(e) { 
+      showStatus("Upload Failed!", "fail"); 
+      progressBar.style.background = "#f44336"; // Turn Red on error
+    } finally { 
+      btn.disabled = false; 
+    }
   }
 
   window.deleteManga = async function(fbId) { 

@@ -202,6 +202,7 @@ html, body {
   100% { transform: translateX(-50%); }
 }
 
+/* FIX: Image Container Height shift prevention */
 .page-placeholder {
     width: 100%;
     aspect-ratio: 2 / 3;
@@ -634,6 +635,7 @@ html, body {
   align-items: center; gap: 5px;
 }
 
+/* FIX: Image protection & Smooth Rendering */
 #pagesContainer img {
     image-rendering: -webkit-optimize-contrast;
     image-rendering: high-quality;
@@ -646,6 +648,8 @@ html, body {
     height: auto;
     pointer-events: none;
     user-select: none;
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
 }
 
 #readingLobby {
@@ -1040,6 +1044,7 @@ input:checked + .slider:before { transform: translateX(20px); }
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc, increment, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+  // Security: Prevent Right Click and F12
   document.addEventListener('contextmenu', e => e.preventDefault());
   document.onkeydown = function(e) {
       if (e.keyCode == 123) return false;
@@ -1047,6 +1052,7 @@ input:checked + .slider:before { transform: translateX(20px); }
       if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
   };
 
+  // Screenshot Alert
   document.addEventListener('keyup', (e) => {
     if (e.key == 'PrintScreen') {
         navigator.clipboard.writeText('Security Alert: Content Protected!');
@@ -1054,6 +1060,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     }
   });
 
+  // Admin Security Listener
   let isAdminLoggedIn = false; 
   setInterval(function() {
       if (isAdminLoggedIn) return; 
@@ -1064,6 +1071,7 @@ input:checked + .slider:before { transform: translateX(20px); }
       }
   }, 1000);
 
+  // Malware Check
   async function checkFileIntegrity(file) {
       return new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -1088,6 +1096,7 @@ input:checked + .slider:before { transform: translateX(20px); }
           .catch((err) => console.log("SW Error:", err));
   }
 
+  // FIXED: Sequential Image Load to prevent layout shift
   async function secureImageLoad(imgElement, imageUrl) {
       return new Promise((resolve) => {
           const parent = imgElement.parentElement;
@@ -1099,7 +1108,6 @@ input:checked + .slider:before { transform: translateX(20px); }
           img.onload = () => {
               imgElement.src = imageUrl;
               imgElement.classList.add('loaded');
-              imgElement.addEventListener('contextmenu', e => e.preventDefault());
               imgElement.setAttribute('draggable', 'false');
               if (parent) parent.classList.remove('skeleton-loader');
               resolve();
@@ -1136,10 +1144,10 @@ input:checked + .slider:before { transform: translateX(20px); }
   let isFirstLoadFromIntro = false;
   const lobbyScrollMemory = {};
   
+  // FIXED: NavigateTo function for cleaner state management
   window.navigateTo = function(targetId, updateHistory = true) {
     if (!targetId) return;
     if (updateHistory) { history.pushState({ lobbyId: targetId }, "", ""); }
-    localStorage.setItem('activeLobbyId', targetId);
     
     const allLobbies = document.querySelectorAll('.app-lobby');
     allLobbies.forEach(l => {
@@ -1171,6 +1179,7 @@ input:checked + .slider:before { transform: translateX(20px); }
       window.toastTimer = setTimeout(() => { toast.classList.remove("show"); }, 2000);
   }
 
+  // FIXED: Back button history loop protection
   window.onpopstate = function(event) {
     const readingSidebar = document.getElementById('readingSettingsSidebar');
     const adminSidebar = document.getElementById('adminSidebar');
@@ -1240,6 +1249,7 @@ input:checked + .slider:before { transform: translateX(20px); }
       });
   }
 
+  // Infinite Scroll Listener
   document.getElementById('mainContentWrapper').addEventListener('scroll', (e) => {
       const { scrollTop, scrollHeight, clientHeight } = e.target;
       if (scrollTop + clientHeight >= scrollHeight - 300) { if (window.mangas.length >= currentLimit) { currentLimit += 6; startMangaListener(); } }
@@ -1304,35 +1314,21 @@ input:checked + .slider:before { transform: translateX(20px); }
 
     try {
       showStatus(`Starting Fast Upload... ⚡`, "success");
-
       for (let i = 0; i < files.length; i += batchSize) {
           const currentBatch = files.slice(i, i + batchSize);
           showStatus(`Uploading Batch: ${Math.floor(i/batchSize) + 1} 🚀`, "success");
           const batchPromises = currentBatch.map(file => processAndUpload(file));
           const results = await Promise.all(batchPromises);
           cloudUrls = [...cloudUrls, ...results];
-          if (i + batchSize < files.length) {
-              await new Promise(resolve => setTimeout(resolve, 1000));
-          }
+          if (i + batchSize < files.length) await new Promise(res => setTimeout(res, 1000));
       }
-
       const targetManga = window.mangas.find(m => m.fbId === selectedFbId);
       const now = Date.now();
       const updatedChapters = [...(targetManga.chapters || []), { title: cTitle, pages: cloudUrls, views: 0, timestamp: now }];
-      
       await updateDoc(doc(db, "mangas", selectedFbId), { chapters: updatedChapters, lastUpdated: now });
-      
-      document.getElementById('chapterTitle').value = ""; 
-      document.getElementById('chapterFiles').value = ""; 
-      document.getElementById('fileStatus').innerText = "No files selected";
+      document.getElementById('chapterTitle').value = ""; document.getElementById('chapterFiles').value = ""; document.getElementById('fileStatus').innerText = "No files selected";
       showStatus(`Chapter Published Successfully! ✅`, "success");
-      
-    } catch(e) { 
-      console.error(e);
-      showStatus("Upload Failed! Check connection.", "fail"); 
-    } finally { 
-      btn.disabled = false; 
-    }
+    } catch(e) { showStatus("Upload Failed! Check connection.", "fail"); } finally { btn.disabled = false; }
   }
 
   window.deleteManga = async function(fbId) { 
@@ -1347,34 +1343,21 @@ input:checked + .slider:before { transform: translateX(20px); }
     } catch(e) { showStatus("Error", "fail"); } 
   }
 
+  // FIXED: Logic to always start from Home on refresh
+  window.addEventListener('load', () => {
+      localStorage.removeItem('currentReadChapterIdx');
+      window.currentOpenMangaFbId = null;
+      if (window.location.hash) { history.replaceState("", document.title, window.location.pathname); }
+      window.navigateTo('mainContentWrapper');
+  });
+
   window.enterSite = () => {
     const intro = document.getElementById('intro');
     intro.classList.add("fade-out");
     isFirstLoadFromIntro = true; 
     setTimeout(() => { 
         intro.style.display = "none"; 
-        document.querySelectorAll('.app-lobby').forEach(l => l.style.display = 'none');
-        const savedLobby = localStorage.getItem('activeLobbyId');
-        const savedMangaFbId = localStorage.getItem('currentOpenMangaFbId');
-        const savedChapterIdx = localStorage.getItem('currentReadChapterIdx');
-
-        if (savedLobby && savedLobby !== 'intro' && savedLobby !== 'mainContentWrapper') {
-            isFirstLoadFromIntro = false;
-            if (savedLobby === 'readingLobby' && savedMangaFbId && savedChapterIdx !== null) {
-                window.currentOpenMangaFbId = savedMangaFbId; 
-                openReadingLobby(savedMangaFbId, parseInt(savedChapterIdx));
-            } 
-            else if (savedLobby === 'detailPage' && savedMangaFbId) { openManga(savedMangaFbId); } 
-            else if (savedLobby === 'bookmarkPage') { openBookmarkLobby(); }
-            else { window.navigateTo('mainContentWrapper'); }
-        } else {
-            const main = document.getElementById('mainContentWrapper');
-            main.style.display = 'block';
-            main.classList.add("animate-in");
-            localStorage.setItem('activeLobbyId', 'mainContentWrapper');
-            history.replaceState({ lobbyId: 'mainContentWrapper' }, "", "");
-        }
-        
+        window.navigateTo('mainContentWrapper');
         renderPublic();
         setTimeout(() => { isFirstLoadFromIntro = false; }, 2000);
     }, 800);
@@ -1418,18 +1401,23 @@ input:checked + .slider:before { transform: translateX(20px); }
   }
 
   function showStatus(t,type){ const s = document.getElementById('uploadStatus'); s.innerText=t; s.className=type+" show"; setTimeout(()=>s.className="",3000); }
-  function updateMangaSelect(){ document.getElementById('mangaSelect').innerHTML = window.mangas.map(m => `<option value="${m.fbId}">${m.name}</option>`).join(''); }
+  
+  // FIXED: updateMangaSelect preserves value
+  function updateMangaSelect(){ 
+    const select = document.getElementById('mangaSelect');
+    const oldVal = select.value;
+    select.innerHTML = window.mangas.map(m => `<option value="${m.fbId}">${m.name}</option>`).join(''); 
+    if(oldVal) select.value = oldVal;
+  }
 
   function shouldShowNewBadge(manga) {
       if (!manga.chapters || manga.chapters.length === 0) return false;
       const latestChapter = manga.chapters[manga.chapters.length - 1];
-      if (!latestChapter.timestamp) return false;
-      return (Date.now() - latestChapter.timestamp) < (24 * 60 * 60 * 1000);
+      return (Date.now() - (latestChapter.timestamp || 0)) < (24 * 60 * 60 * 1000);
   }
 
   function isNewCover(manga) {
-      if (!manga.lastUpdated) return false;
-      return (Date.now() - manga.lastUpdated) < (24 * 60 * 60 * 1000);
+      return (Date.now() - (manga.lastUpdated || 0)) < (24 * 60 * 60 * 1000);
   }
 
   window.renderPublic = function(){
@@ -1437,7 +1425,6 @@ input:checked + .slider:before { transform: translateX(20px); }
     document.getElementById('mangaList').innerHTML = window.mangas.map((m, i) => {
       const animClass = isFirstLoadFromIntro ? 'animate-intro' : '';
       const delay = isFirstLoadFromIntro ? `style="animation-delay: ${0.8 + (i * 0.05)}s"` : '';
-      
       return `
       <div class="manga ${animClass}" onclick="openManga('${m.fbId}')" ${delay}>
         ${shouldShowNewBadge(m) ? '<div class="new-chapter-badge">New Update</div>' : ''}
@@ -1453,6 +1440,7 @@ input:checked + .slider:before { transform: translateX(20px); }
   let isDown = false, startX, currentPos = 0, animationId;
   const scrollSpeed = 0.5;
 
+  // FIXED: Ghosting fix for featured bar
   function renderFeatured(){
     const bar = document.getElementById('featuredBar'), track = document.getElementById('featuredTrack'), title = document.getElementById('popularTitleBar'), divider = document.getElementById('premDivider');
     if(window.mangas.length > 0) { 
@@ -1534,26 +1522,18 @@ input:checked + .slider:before { transform: translateX(20px); }
     }
   }
 
-  /* RE-EDITED STATUS LOGIC: ALWAYS MARK COMPLETED UPON OPENING LOBBY */
   window.saveReadingProgress = function() {
       const fbId = window.currentOpenMangaFbId;
       const chIdx = localStorage.getItem('currentReadChapterIdx');
       if (fbId && chIdx !== null) {
-          const idx = parseInt(chIdx);
-          const progressData = {
-              status: "completed",
-              lastRead: Date.now()
-          };
-          localStorage.setItem(`p_stat_${fbId}_${idx}`, JSON.stringify(progressData));
+          localStorage.setItem(`p_stat_${fbId}_${chIdx}`, JSON.stringify({ status: "completed", lastRead: Date.now() }));
       }
   };
 
   window.openManga = function(fbId){
     if (isDown) return;
-    localStorage.setItem('currentOpenMangaFbId', fbId);
     window.currentOpenMangaFbId = fbId;
     const m = window.mangas.find(x => x.fbId === fbId); if(!m) return;
-    isFirstLoadFromIntro = false;
     window.navigateTo('detailPage');
     const genresHtml = (m.genres || ["Action"]).map(g => `<span class="genre-tag">${g}</span>`).join('');
     const isBookmarked = JSON.parse(localStorage.getItem('bookmarks') || "[]").includes(fbId);
@@ -1572,23 +1552,18 @@ input:checked + .slider:before { transform: translateX(20px); }
       </div>
       <div class="manga-title-wrap"><h2 class="manga-title">${m.name}</h2><div class="manga-description">${m.description || 'No description available.'}</div></div>`;
     
-    // --- RENDER CHAPTER LIST WITH REVERSED ORDER (3, 2, 1) & SHOW MORE ---
     let html = '<div id="chapterContainer" style="display: flex; flex-direction: column;">';
     if(!m.chapters || m.chapters.length === 0) {
         html = "<p style='text-align:center; opacity:0.3; padding:50px;'>NO CHAPTERS YET</p>";
     } else {
       const reversedChapters = [...m.chapters].reverse();
       const lastReadIdx = parseInt(localStorage.getItem(`last_active_ch_${fbId}`));
-
       reversedChapters.forEach((ch, rIdx) => {
         const originalIdx = m.chapters.length - 1 - rIdx;
         const pStat = JSON.parse(localStorage.getItem(`p_stat_${fbId}_${originalIdx}`) || "{}");
         const isCompleted = pStat.status === "completed";
         const isLastRead = (originalIdx === lastReadIdx);
-
-        // Hide after 5 chapters
         if (rIdx === 5) html += `<div id="moreChapters" class="hidden-chapters">`;
-
         html += `
           <div class="chapter-item ${isCompleted ? 'fully-read' : ''}" onclick="openReadingLobby('${fbId}', ${originalIdx})">
             <div style="display:flex; flex-direction:column; gap:4px;">
@@ -1598,20 +1573,14 @@ input:checked + .slider:before { transform: translateX(20px); }
             ${isLastRead ? '<span class="last-read-badge">ဒီနေရာထိ ဖတ်ထားပါတယ်</span>' : ''}
           </div>`;
       });
-
-      if (reversedChapters.length > 5) {
-          html += `</div><button id="showMoreBtn" class="show-more-btn" onclick="window.toggleChapters()">Show More Chapters</button>`;
-      }
+      if (reversedChapters.length > 5) html += `</div><button id="showMoreBtn" class="show-more-btn" onclick="window.toggleChapters()">Show More Chapters</button>`;
     }
     document.getElementById('chapterItemsContainer').innerHTML = html + "</div>";
   }
 
-  /* Global Toggle Chapters for Show More functionality */
   window.toggleChapters = function() {
-      const more = document.getElementById('moreChapters');
-      const btn = document.getElementById('showMoreBtn');
-      if(more) more.style.display = 'block';
-      if(btn) btn.style.display = 'none';
+      const more = document.getElementById('moreChapters'), btn = document.getElementById('showMoreBtn');
+      if(more) more.style.display = 'block'; if(btn) btn.style.display = 'none';
   };
 
   let currentReadMode = 'scroll', currentPageIndex = 0, totalPages = 0, lastScrollTop = 0;
@@ -1620,43 +1589,26 @@ input:checked + .slider:before { transform: translateX(20px); }
       const m = window.mangas.find(x => x.fbId === fbId); 
       if(!m || !m.chapters[chIdx]) return;
       const ch = m.chapters[chIdx];
-      
       localStorage.setItem(`last_active_ch_${fbId}`, chIdx);
       localStorage.setItem('currentReadChapterIdx', chIdx);
       window.currentOpenMangaFbId = fbId;
-      isFirstLoadFromIntro = false;
       window.navigateTo('readingLobby');
       document.getElementById('readingTitle').innerText = ch.title;
-      
       markChapterReadAndCount(fbId, chIdx);
-      
-      totalPages = ch.pages.length; 
-      currentPageIndex = 0;
+      totalPages = ch.pages.length; currentPageIndex = 0;
       document.getElementById('sidebarChapterList').innerHTML = m.chapters.map((c, i) => 
           `<div class="sidebar-chapter-opt ${i === chIdx ? 'active' : ''}" onclick="openReadingLobby('${fbId}', ${i}); manualCloseSidebar();">${c.title}</div>`
       ).join('');
       
       const nextBtn = document.getElementById('nextChapterBtn');
       if(chIdx + 1 < m.chapters.length) { 
-          nextBtn.disabled = false; 
-          nextBtn.innerText = "Next"; 
+          nextBtn.style.display = "block"; nextBtn.disabled = false; nextBtn.innerText = "Next"; 
           nextBtn.onclick = () => { saveReadingProgress(); openReadingLobby(fbId, chIdx + 1); }; 
       } else { 
-          nextBtn.disabled = true; 
-          nextBtn.innerText = "End"; 
+          nextBtn.style.display = "none"; nextBtn.disabled = true; 
       }
-
-      const hbToggle = document.getElementById('headbar-toggle');
-      const savedStatus = localStorage.getItem('headBarStatus') !== 'off';
-      hbToggle.checked = savedStatus; 
-      applyHeadBarSetting(savedStatus);
-      applyReadMode(); 
-      
-      const container = document.getElementById('readingLobby');
-      container.scrollTop = 0; // Resume functionality removed - always start from top
-      renderPagesSequentially(ch.pages).then(() => {
-          container.scrollTop = 0;
-      });
+      applyHeadBarSetting(localStorage.getItem('headBarStatus') !== 'off');
+      applyReadMode(); renderPagesSequentially(ch.pages);
   }
 
   function applyHeadBarSetting(show) {
@@ -1671,8 +1623,8 @@ input:checked + .slider:before { transform: translateX(20px); }
       if(currentReadMode !== 'scroll') return;
       const st = e.target.scrollTop, h = document.getElementById('readingHeader');
       if(localStorage.getItem('headBarStatus') === 'off') {
-          if (st > lastScrollTop && st > 100) { h.classList.add('hidden'); } 
-          else { h.classList.remove('hidden'); }
+          if (st > lastScrollTop && st > 100) h.classList.add('hidden');
+          else h.classList.remove('hidden');
       }
       lastScrollTop = st <= 0 ? 0 : st;
   });
@@ -1761,13 +1713,8 @@ input:checked + .slider:before { transform: translateX(20px); }
       };
   }
 
-  window.closeReadingLobby = () => { 
-      saveReadingProgress(); 
-      if(document.fullscreenElement) document.exitFullscreen(); 
-      localStorage.removeItem('currentReadChapterIdx'); 
-      history.back(); 
-  }
-  window.closeDetail = () => { localStorage.removeItem('currentOpenMangaFbId'); history.back(); }
+  window.closeReadingLobby = () => { saveReadingProgress(); if(document.fullscreenElement) document.exitFullscreen(); history.back(); }
+  window.closeDetail = () => { history.back(); }
 
   window.toggleBookmark = function(fbId) {
     let b = JSON.parse(localStorage.getItem('bookmarks') || "[]");
@@ -1776,12 +1723,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     localStorage.setItem('bookmarks', JSON.stringify(b)); openManga(fbId); renderBookmarks();
   }
   
-  window.openBookmarkLobby = function() { 
-      document.getElementById('adminSidebar').classList.remove('show'); 
-      isFirstLoadFromIntro = false;
-      window.navigateTo('bookmarkPage'); 
-      renderBookmarks(); 
-  }
+  window.openBookmarkLobby = function() { document.getElementById('adminSidebar').classList.remove('show'); window.navigateTo('bookmarkPage'); renderBookmarks(); }
   window.closeBookmarkLobby = function() { history.back(); }
 
   function renderBookmarks() {
@@ -1800,3 +1742,4 @@ input:checked + .slider:before { transform: translateX(20px); }
 </script>
 </body>
 </html>
+

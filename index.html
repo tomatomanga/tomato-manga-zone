@@ -575,7 +575,8 @@ html, body {
     display: flex;
     align-items: center; gap: 10px;
 }
-/* PREVENT CHEAP LOOK - PREMIUM CHAPTER STYLING */
+
+/* --- RE-EDITED CHAPTER STYLING: SIMPLE RED BORDER & DIMMING --- */
 .chapter-item {
     background: var(--card);
     padding: 15px 20px;
@@ -586,31 +587,45 @@ html, body {
     align-items: center;
     border: 1px solid rgba(255,255,255,0.05);
     cursor: pointer;
-    transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: 0.3s;
     position: relative;
-    border-left: 4px solid transparent;
+    border-left: 4px solid #ff2a2a; /* Always Red Border */
 }
-.chapter-item.read-completed { 
-    border-left: 4px solid #00ff88;
-    background: linear-gradient(90deg, rgba(0, 255, 136, 0.05) 0%, var(--card) 100%);
+
+/* Dimming for read chapters without extra colors */
+.chapter-item.fully-read {
+    opacity: 0.25; 
 }
-.chapter-item.read-in-progress { 
-    border-left: 4px solid #ffaa00;
-    background: linear-gradient(90deg, rgba(255, 170, 0, 0.05) 0%, var(--card) 100%);
+
+.last-read-badge {
+    background: linear-gradient(90deg, #ff2a2a, #ff7b7b);
+    color: white;
+    font-size: 9px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-weight: bold;
+    text-transform: uppercase;
+    box-shadow: 0 0 10px rgba(255, 42, 42, 0.3);
 }
+
+.show-more-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px;
+    background: rgba(255, 42, 42, 0.1);
+    border: 1px solid #ff2a2a;
+    color: #ff2a2a;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.show-more-btn:hover { background: #ff2a2a; color: white; }
+.hidden-chapters { display: none; }
+
 .chapter-item:active { transform: scale(0.97); }
 .chapter-item span { font-weight: 700; font-size: 15px; }
-
-.read-status-tag {
-    font-size: 10px;
-    font-weight: 800;
-    text-transform: uppercase;
-    padding: 3px 8px;
-    border-radius: 4px;
-    letter-spacing: 0.5px;
-}
-.status-finished { color: #00ff88; background: rgba(0, 255, 136, 0.1); }
-.status-reading { color: #ffaa00; background: rgba(255, 170, 0, 0.1); }
 
 .view-count {
   font-size: 12px;
@@ -1503,7 +1518,6 @@ input:checked + .slider:before { transform: translateX(20px); }
       </div>`).join('');
   }
 
-  // --- PREMIUM READ PROGRESS LOGIC ---
   async function markChapterReadAndCount(mangaId, chapterIdx) {
     let readHistory = JSON.parse(localStorage.getItem('read_chapters') || "{}");
     if(!readHistory[mangaId]) readHistory[mangaId] = [];
@@ -1520,24 +1534,14 @@ input:checked + .slider:before { transform: translateX(20px); }
     }
   }
 
-  // AUTO-MARK READ PROGRESS ON EXIT
+  /* RE-EDITED STATUS LOGIC: ALWAYS MARK COMPLETED UPON OPENING LOBBY */
   window.saveReadingProgress = function() {
       const fbId = window.currentOpenMangaFbId;
       const chIdx = localStorage.getItem('currentReadChapterIdx');
-      const container = document.getElementById('readingLobby');
       if (fbId && chIdx !== null) {
           const idx = parseInt(chIdx);
-          const scrollPos = container.scrollTop;
-          const totalHeight = container.scrollHeight - container.clientHeight;
-          const progressPercent = totalHeight > 0 ? (scrollPos / totalHeight) * 100 : 0;
-          
-          let status = "in-progress";
-          if (progressPercent > 90) status = "completed";
-
           const progressData = {
-              scrollPos: scrollPos,
-              percent: Math.round(progressPercent),
-              status: status,
+              status: "completed",
               lastRead: Date.now()
           };
           localStorage.setItem(`p_stat_${fbId}_${idx}`, JSON.stringify(progressData));
@@ -1568,34 +1572,47 @@ input:checked + .slider:before { transform: translateX(20px); }
       </div>
       <div class="manga-title-wrap"><h2 class="manga-title">${m.name}</h2><div class="manga-description">${m.description || 'No description available.'}</div></div>`;
     
-    let html = "";
-    if(!m.chapters || m.chapters.length === 0) html = "<p style='text-align:center; opacity:0.3; padding:50px;'>NO CHAPTERS YET</p>";
-    else {
-      m.chapters.forEach((ch, idx) => {
-        const pStat = JSON.parse(localStorage.getItem(`p_stat_${fbId}_${idx}`) || "{}");
-        let statusBadge = "";
-        let statusClass = "";
-        
-        if(pStat.status === "completed") {
-            statusBadge = `<span class="read-status-tag status-finished">Finished ✅</span>`;
-            statusClass = "read-completed";
-        } else if(pStat.status === "in-progress") {
-            statusBadge = `<span class="read-status-tag status-reading">${pStat.percent}% Read 📖</span>`;
-            statusClass = "read-in-progress";
-        }
+    // --- RENDER CHAPTER LIST WITH REVERSED ORDER (3, 2, 1) & SHOW MORE ---
+    let html = '<div id="chapterContainer" style="display: flex; flex-direction: column;">';
+    if(!m.chapters || m.chapters.length === 0) {
+        html = "<p style='text-align:center; opacity:0.3; padding:50px;'>NO CHAPTERS YET</p>";
+    } else {
+      const reversedChapters = [...m.chapters].reverse();
+      const lastReadIdx = parseInt(localStorage.getItem(`last_active_ch_${fbId}`));
+
+      reversedChapters.forEach((ch, rIdx) => {
+        const originalIdx = m.chapters.length - 1 - rIdx;
+        const pStat = JSON.parse(localStorage.getItem(`p_stat_${fbId}_${originalIdx}`) || "{}");
+        const isCompleted = pStat.status === "completed";
+        const isLastRead = (originalIdx === lastReadIdx);
+
+        // Hide after 5 chapters
+        if (rIdx === 5) html += `<div id="moreChapters" class="hidden-chapters">`;
 
         html += `
-          <div class="chapter-item ${statusClass}" onclick="openReadingLobby('${fbId}', ${idx})">
+          <div class="chapter-item ${isCompleted ? 'fully-read' : ''}" onclick="openReadingLobby('${fbId}', ${originalIdx})">
             <div style="display:flex; flex-direction:column; gap:4px;">
-                <span>${ch.title}</span>
-                <div class="view-count">👁️ ${ch.views || 0} Views</div>
+                <span style="color:white;">${ch.title}</span>
+                <div class="view-count">👁️ ${ch.views || 0} Views | ${ch.pages.length} Pages</div>
             </div>
-            ${statusBadge}
+            ${isLastRead ? '<span class="last-read-badge">ဒီနေရာထိ ဖတ်ထားပါတယ်</span>' : ''}
           </div>`;
       });
+
+      if (reversedChapters.length > 5) {
+          html += `</div><button id="showMoreBtn" class="show-more-btn" onclick="window.toggleChapters()">Show More Chapters</button>`;
+      }
     }
-    document.getElementById('chapterItemsContainer').innerHTML = html;
+    document.getElementById('chapterItemsContainer').innerHTML = html + "</div>";
   }
+
+  /* Global Toggle Chapters for Show More functionality */
+  window.toggleChapters = function() {
+      const more = document.getElementById('moreChapters');
+      const btn = document.getElementById('showMoreBtn');
+      if(more) more.style.display = 'block';
+      if(btn) btn.style.display = 'none';
+  };
 
   let currentReadMode = 'scroll', currentPageIndex = 0, totalPages = 0, lastScrollTop = 0;
 
@@ -1603,7 +1620,10 @@ input:checked + .slider:before { transform: translateX(20px); }
       const m = window.mangas.find(x => x.fbId === fbId); 
       if(!m || !m.chapters[chIdx]) return;
       const ch = m.chapters[chIdx];
+      
+      localStorage.setItem(`last_active_ch_${fbId}`, chIdx);
       localStorage.setItem('currentReadChapterIdx', chIdx);
+      window.currentOpenMangaFbId = fbId;
       isFirstLoadFromIntro = false;
       window.navigateTo('readingLobby');
       document.getElementById('readingTitle').innerText = ch.title;
@@ -1632,15 +1652,10 @@ input:checked + .slider:before { transform: translateX(20px); }
       applyHeadBarSetting(savedStatus);
       applyReadMode(); 
       
+      const container = document.getElementById('readingLobby');
+      container.scrollTop = 0; // Resume functionality removed - always start from top
       renderPagesSequentially(ch.pages).then(() => {
-          // SMART RESUME POS
-          const pStat = JSON.parse(localStorage.getItem(`p_stat_${fbId}_${chIdx}`) || "{}");
-          if(pStat.scrollPos && currentReadMode === 'scroll') {
-              setTimeout(() => {
-                  document.getElementById('readingLobby').scrollTo({ top: pStat.scrollPos, behavior: 'smooth' });
-                  showToast("ဖတ်လက်စနေရာကနေ ပြန်စပေးထားပါတယ် 📖");
-              }, 500);
-          }
+          container.scrollTop = 0;
       });
   }
 
@@ -1747,7 +1762,7 @@ input:checked + .slider:before { transform: translateX(20px); }
   }
 
   window.closeReadingLobby = () => { 
-      saveReadingProgress(); // AUTO SAVE ON BACK
+      saveReadingProgress(); 
       if(document.fullscreenElement) document.exitFullscreen(); 
       localStorage.removeItem('currentReadChapterIdx'); 
       history.back(); 

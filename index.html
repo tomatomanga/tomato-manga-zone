@@ -575,6 +575,8 @@ html, body {
     display: flex;
     align-items: center; gap: 10px;
 }
+
+/* --- RE-EDITED CHAPTER STYLING: SIMPLE RED BORDER & DIMMING --- */
 .chapter-item {
     background: var(--card);
     padding: 15px 20px;
@@ -587,17 +589,49 @@ html, body {
     cursor: pointer;
     transition: 0.3s;
     position: relative;
+    border-left: 4px solid #ff2a2a; /* Always Red Border */
 }
-.chapter-item.read { opacity: 0.5; border: 1px solid var(--accent); }
-.chapter-item:active { transform: scale(0.97); background: var(--accent); }
+
+/* Dimming for read chapters without extra colors */
+.chapter-item.fully-read {
+    opacity: 0.25; 
+}
+
+.last-read-badge {
+    background: linear-gradient(90deg, #ff2a2a, #ff7b7b);
+    color: white;
+    font-size: 9px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-weight: bold;
+    text-transform: uppercase;
+    box-shadow: 0 0 10px rgba(255, 42, 42, 0.3);
+}
+
+.show-more-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px;
+    background: rgba(255, 42, 42, 0.1);
+    border: 1px solid #ff2a2a;
+    color: #ff2a2a;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.show-more-btn:hover { background: #ff2a2a; color: white; }
+.hidden-chapters { display: none; }
+
+.chapter-item:active { transform: scale(0.97); }
 .chapter-item span { font-weight: 700; font-size: 15px; }
 
 .view-count {
   font-size: 12px;
-  opacity: 0.8;
+  opacity: 0.5;
   display: flex;
   align-items: center; gap: 5px;
-  position: absolute; bottom: 8px; right: 20px;
 }
 
 #pagesContainer img {
@@ -995,7 +1029,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     </div>
     <div id="pagesContainer"></div>
     <div class="reading-nav-panel">
-        <button class="nav-btn back-to-lobby" id="backToDetailBtn">Back</button>
+        <button class="nav-btn back-to-lobby" id="backToDetailBtn" onclick="closeReadingLobby()">Back</button>
         <button class="nav-btn" id="nextChapterBtn">Next</button>
     </div>
 </div>
@@ -1500,10 +1534,19 @@ input:checked + .slider:before { transform: translateX(20px); }
     }
   }
 
-  function isChapterRead(mangaId, chapterIdx) {
-    let rh = JSON.parse(localStorage.getItem('read_chapters') || "{}");
-    return rh[mangaId] && rh[mangaId].includes(chapterIdx);
-  }
+  /* RE-EDITED STATUS LOGIC: ALWAYS MARK COMPLETED UPON OPENING LOBBY */
+  window.saveReadingProgress = function() {
+      const fbId = window.currentOpenMangaFbId;
+      const chIdx = localStorage.getItem('currentReadChapterIdx');
+      if (fbId && chIdx !== null) {
+          const idx = parseInt(chIdx);
+          const progressData = {
+              status: "completed",
+              lastRead: Date.now()
+          };
+          localStorage.setItem(`p_stat_${fbId}_${idx}`, JSON.stringify(progressData));
+      }
+  };
 
   window.openManga = function(fbId){
     if (isDown) return;
@@ -1528,18 +1571,48 @@ input:checked + .slider:before { transform: translateX(20px); }
           </div>
       </div>
       <div class="manga-title-wrap"><h2 class="manga-title">${m.name}</h2><div class="manga-description">${m.description || 'No description available.'}</div></div>`;
-    let html = "";
-    if(!m.chapters || m.chapters.length === 0) html = "<p style='text-align:center; opacity:0.3; padding:50px;'>NO CHAPTERS YET</p>";
-    else {
-      m.chapters.forEach((ch, idx) => {
+    
+    // --- RENDER CHAPTER LIST WITH REVERSED ORDER (3, 2, 1) & SHOW MORE ---
+    let html = '<div id="chapterContainer" style="display: flex; flex-direction: column;">';
+    if(!m.chapters || m.chapters.length === 0) {
+        html = "<p style='text-align:center; opacity:0.3; padding:50px;'>NO CHAPTERS YET</p>";
+    } else {
+      const reversedChapters = [...m.chapters].reverse();
+      const lastReadIdx = parseInt(localStorage.getItem(`last_active_ch_${fbId}`));
+
+      reversedChapters.forEach((ch, rIdx) => {
+        const originalIdx = m.chapters.length - 1 - rIdx;
+        const pStat = JSON.parse(localStorage.getItem(`p_stat_${fbId}_${originalIdx}`) || "{}");
+        const isCompleted = pStat.status === "completed";
+        const isLastRead = (originalIdx === lastReadIdx);
+
+        // Hide after 5 chapters
+        if (rIdx === 5) html += `<div id="moreChapters" class="hidden-chapters">`;
+
         html += `
-          <div class="chapter-item ${isChapterRead(fbId, idx) ? 'read' : ''}" onclick="openReadingLobby('${fbId}', ${idx})">
-            <span>${ch.title}</span><div class="view-count">👁️ ${ch.views || 0}</div>
+          <div class="chapter-item ${isCompleted ? 'fully-read' : ''}" onclick="openReadingLobby('${fbId}', ${originalIdx})">
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <span style="color:white;">${ch.title}</span>
+                <div class="view-count">👁️ ${ch.views || 0} Views | ${ch.pages.length} Pages</div>
+            </div>
+            ${isLastRead ? '<span class="last-read-badge">ဒီနေရာထိ ဖတ်ထားပါတယ်</span>' : ''}
           </div>`;
       });
+
+      if (reversedChapters.length > 5) {
+          html += `</div><button id="showMoreBtn" class="show-more-btn" onclick="window.toggleChapters()">Show More Chapters</button>`;
+      }
     }
-    document.getElementById('chapterItemsContainer').innerHTML = html;
+    document.getElementById('chapterItemsContainer').innerHTML = html + "</div>";
   }
+
+  /* Global Toggle Chapters for Show More functionality */
+  window.toggleChapters = function() {
+      const more = document.getElementById('moreChapters');
+      const btn = document.getElementById('showMoreBtn');
+      if(more) more.style.display = 'block';
+      if(btn) btn.style.display = 'none';
+  };
 
   let currentReadMode = 'scroll', currentPageIndex = 0, totalPages = 0, lastScrollTop = 0;
 
@@ -1547,31 +1620,43 @@ input:checked + .slider:before { transform: translateX(20px); }
       const m = window.mangas.find(x => x.fbId === fbId); 
       if(!m || !m.chapters[chIdx]) return;
       const ch = m.chapters[chIdx];
+      
+      localStorage.setItem(`last_active_ch_${fbId}`, chIdx);
       localStorage.setItem('currentReadChapterIdx', chIdx);
+      window.currentOpenMangaFbId = fbId;
       isFirstLoadFromIntro = false;
       window.navigateTo('readingLobby');
       document.getElementById('readingTitle').innerText = ch.title;
+      
       markChapterReadAndCount(fbId, chIdx);
+      
       totalPages = ch.pages.length; 
       currentPageIndex = 0;
       document.getElementById('sidebarChapterList').innerHTML = m.chapters.map((c, i) => 
           `<div class="sidebar-chapter-opt ${i === chIdx ? 'active' : ''}" onclick="openReadingLobby('${fbId}', ${i}); manualCloseSidebar();">${c.title}</div>`
       ).join('');
+      
       const nextBtn = document.getElementById('nextChapterBtn');
       if(chIdx + 1 < m.chapters.length) { 
           nextBtn.disabled = false; 
           nextBtn.innerText = "Next"; 
-          nextBtn.onclick = () => openReadingLobby(fbId, chIdx + 1); 
+          nextBtn.onclick = () => { saveReadingProgress(); openReadingLobby(fbId, chIdx + 1); }; 
       } else { 
           nextBtn.disabled = true; 
           nextBtn.innerText = "End"; 
       }
+
       const hbToggle = document.getElementById('headbar-toggle');
       const savedStatus = localStorage.getItem('headBarStatus') !== 'off';
       hbToggle.checked = savedStatus; 
       applyHeadBarSetting(savedStatus);
       applyReadMode(); 
-      renderPagesSequentially(ch.pages);
+      
+      const container = document.getElementById('readingLobby');
+      container.scrollTop = 0; // Resume functionality removed - always start from top
+      renderPagesSequentially(ch.pages).then(() => {
+          container.scrollTop = 0;
+      });
   }
 
   function applyHeadBarSetting(show) {
@@ -1676,7 +1761,12 @@ input:checked + .slider:before { transform: translateX(20px); }
       };
   }
 
-  window.closeReadingLobby = () => { if(document.fullscreenElement) document.exitFullscreen(); localStorage.removeItem('currentReadChapterIdx'); history.back(); }
+  window.closeReadingLobby = () => { 
+      saveReadingProgress(); 
+      if(document.fullscreenElement) document.exitFullscreen(); 
+      localStorage.removeItem('currentReadChapterIdx'); 
+      history.back(); 
+  }
   window.closeDetail = () => { localStorage.removeItem('currentOpenMangaFbId'); history.back(); }
 
   window.toggleBookmark = function(fbId) {

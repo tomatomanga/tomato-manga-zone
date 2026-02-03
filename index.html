@@ -1149,6 +1149,38 @@ input:checked + .slider:before { transform: translateX(20px); }
   let shouldAnimateMangas = true;
   let isFirstLoadFromIntro = false;
   const lobbyScrollMemory = {};
+
+  // --- NEW LOBBY MANAGEMENT ENGINE ---
+  const LobbyManagement = {
+    storageKey: "PERMANENT_LOBBY_STACK",
+
+    pushLobby: function(id) {
+        let stack = this.getStack();
+        if (stack[stack.length - 1] !== id) {
+            stack.push(id);
+            sessionStorage.setItem(this.storageKey, JSON.stringify(stack));
+        }
+    },
+
+    popLobby: function() {
+        let stack = this.getStack();
+        if (stack.length > 1) {
+            stack.pop();
+            sessionStorage.setItem(this.storageKey, JSON.stringify(stack));
+            return stack[stack.length - 1];
+        }
+        return "mainContentWrapper";
+    },
+
+    getStack: function() {
+        let data = sessionStorage.getItem(this.storageKey);
+        return data ? JSON.parse(data) : ["mainContentWrapper"];
+    },
+
+    resetLobby: function() {
+        sessionStorage.removeItem(this.storageKey);
+    }
+  };
   
   // FIXED: NavigateTo function for cleaner state management & Display Fix
   window.navigateTo = function(targetId, updateHistory = true) {
@@ -1169,7 +1201,11 @@ input:checked + .slider:before { transform: translateX(20px); }
     const target = document.getElementById(targetId);
     if (target) {
       target.style.display = 'block'; 
-      localStorage.setItem('activeLobbyId', targetId); // Save state
+      localStorage.setItem('activeLobbyId', targetId); // Save state for Refresh Persistence
+      
+      // Update the Permanent Lobby Stack
+      if (updateHistory) LobbyManagement.pushLobby(targetId);
+
       const savedPos = lobbyScrollMemory[targetId] || 0;
       
       if(targetId === 'mainContentWrapper') { 
@@ -1217,14 +1253,10 @@ input:checked + .slider:before { transform: translateX(20px); }
         if(adminSidebar) adminSidebar.classList.remove('show');
         return;
     }
-    if (event.state && event.state.lobbyId) { 
-        isFirstLoadFromIntro = false;
-        window.navigateTo(event.state.lobbyId, false); 
-    } 
-    else { 
-        isFirstLoadFromIntro = false;
-        window.navigateTo('mainContentWrapper', false); 
-    }
+
+    // Lobby Step-by-Step Logic
+    const prevLobby = LobbyManagement.popLobby();
+    window.navigateTo(prevLobby, false);
   };
 
   const genreOptions = ["Action", "Adventure", "Comedy", "Drama", "Fantasy", "Horror", "Mystery", "Romance", "Sci-Fi", "Slice of Life", "Sports", "Supernatural", "Thriller", "Seinen", "Shounen"];
@@ -1385,8 +1417,9 @@ input:checked + .slider:before { transform: translateX(20px); }
       window.currentOpenMangaFbId = null;
       if (window.location.hash) { history.replaceState("", document.title, window.location.pathname); }
       
+      // PERMANENT LOBBY RESTORE
       const lastActive = localStorage.getItem('activeLobbyId') || 'mainContentWrapper';
-      window.navigateTo(lastActive);
+      window.navigateTo(lastActive, false);
   });
 
   window.enterSite = () => {
@@ -1440,7 +1473,6 @@ input:checked + .slider:before { transform: translateX(20px); }
 
   function showStatus(t,type){ const s = document.getElementById('uploadStatus'); s.innerText=t; s.className=type+" show"; setTimeout(()=>s.className="",3000); }
   
-  // FIXED: updateMangaSelect preserves value
   function updateMangaSelect(){ 
     const select = document.getElementById('mangaSelect');
     if(!select) return;
@@ -1479,7 +1511,6 @@ input:checked + .slider:before { transform: translateX(20px); }
   let isDown = false, startX, currentPos = 0, animationId;
   const scrollSpeed = 0.5;
 
-  // FIXED: Ghosting fix for featured bar
   function renderFeatured(){
     const bar = document.getElementById('featuredBar'), track = document.getElementById('featuredTrack'), title = document.getElementById('popularTitleBar'), divider = document.getElementById('premDivider');
     if(window.mangas.length > 0) { 
@@ -1778,6 +1809,14 @@ input:checked + .slider:before { transform: translateX(20px); }
         <p>${m.name}</p>
       </div>`).join('');
   }
+
+  // --- TAB CLOSURE / NEW LINK RESET LOGIC ---
+  if (!sessionStorage.getItem('is_session_active')) {
+      // First time in this tab/window, reset lobbies but keep manga progress
+      LobbyManagement.resetLobby();
+      sessionStorage.setItem('is_session_active', 'true');
+  }
+
 </script>
 </body>
 </html>

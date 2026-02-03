@@ -1096,7 +1096,7 @@ input:checked + .slider:before { transform: translateX(20px); }
           .catch((err) => console.log("SW Error:", err));
   }
 
-  // FIXED: Sequential Image Load with RAM Clear Logic
+  // FIXED: Sequential Image Load to prevent layout shift
   async function secureImageLoad(imgElement, imageUrl) {
       return new Promise((resolve) => {
           const parent = imgElement.parentElement;
@@ -1110,11 +1110,6 @@ input:checked + .slider:before { transform: translateX(20px); }
               imgElement.classList.add('loaded');
               imgElement.setAttribute('draggable', 'false');
               if (parent) parent.classList.remove('skeleton-loader');
-              
-              // Memory Clean-up logic (If using object URLs in future)
-              if(imageUrl.startsWith('blob:')) {
-                  URL.revokeObjectURL(imageUrl);
-              }
               resolve();
           };
           img.onerror = () => {
@@ -1145,94 +1140,34 @@ input:checked + .slider:before { transform: translateX(20px); }
   
   let currentLimit = 6;
   let unsubscribeManga = null;
-  let isListenerActive = false; // Prevent multiple listeners
   let shouldAnimateMangas = true;
   let isFirstLoadFromIntro = false;
   const lobbyScrollMemory = {};
-
-  // --- NEW LOBBY MANAGEMENT ENGINE ---
-  const LobbyManagement = {
-    storageKey: "PERMANENT_LOBBY_STACK",
-
-    pushLobby: function(id) {
-        let stack = this.getStack();
-        if (stack[stack.length - 1] !== id) {
-            stack.push(id);
-            sessionStorage.setItem(this.storageKey, JSON.stringify(stack));
-        }
-    },
-
-    popLobby: function() {
-        let stack = this.getStack();
-        if (stack.length > 1) {
-            stack.pop();
-            sessionStorage.setItem(this.storageKey, JSON.stringify(stack));
-            return stack[stack.length - 1];
-        }
-        return "mainContentWrapper";
-    },
-
-    getStack: function() {
-        let data = sessionStorage.getItem(this.storageKey);
-        return data ? JSON.parse(data) : ["mainContentWrapper"];
-    },
-
-    resetLobby: function() {
-        sessionStorage.removeItem(this.storageKey);
-    }
-  };
   
-  // FIXED: NavigateTo function for cleaner state management & Display Fix
+  // FIXED: NavigateTo function for cleaner state management
   window.navigateTo = function(targetId, updateHistory = true) {
     if (!targetId) return;
+    if (updateHistory) { history.pushState({ lobbyId: targetId }, "", ""); }
     
-    const allLobbies = ['mainContentWrapper', 'detailPage', 'readingLobby', 'bookmarkPage'];
-    
-    allLobbies.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) {
-          if (getComputedStyle(el).display === 'block') { 
-              lobbyScrollMemory[id] = el.scrollTop; 
-          }
-          el.style.display = 'none';
+    const allLobbies = document.querySelectorAll('.app-lobby');
+    allLobbies.forEach(l => {
+      if (getComputedStyle(l).display === 'block') { 
+          lobbyScrollMemory[l.id] = l.scrollTop; 
       }
+      l.style.display = 'none';
     });
     
     const target = document.getElementById(targetId);
     if (target) {
       target.style.display = 'block'; 
-      localStorage.setItem('activeLobbyId', targetId); // Save state for Refresh Persistence
-      
-      // Update the Permanent Lobby Stack
-      if (updateHistory) LobbyManagement.pushLobby(targetId);
-
       const savedPos = lobbyScrollMemory[targetId] || 0;
-      
       if(targetId === 'mainContentWrapper') { 
           shouldAnimateMangas = true; 
           renderPublic(); 
       }
       setTimeout(() => { target.scrollTop = savedPos; }, 10);
     }
-    
-    if (updateHistory) { history.pushState({ lobbyId: targetId }, "", ""); }
   };
-
-  // Background to Foreground Restoration Logic
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-        const currentLobby = localStorage.getItem('activeLobbyId');
-        if (!currentLobby || currentLobby === 'undefined') {
-            window.navigateTo('mainContentWrapper');
-        } else {
-            // Re-verify display
-            const el = document.getElementById(currentLobby);
-            if (el && getComputedStyle(el).display === 'none') {
-                window.navigateTo(currentLobby, false);
-            }
-        }
-    }
-  });
 
   window.showToast = function(message) {
       const toast = document.getElementById("toastBox");
@@ -1253,18 +1188,22 @@ input:checked + .slider:before { transform: translateX(20px); }
         if(adminSidebar) adminSidebar.classList.remove('show');
         return;
     }
-
-    // Lobby Step-by-Step Logic
-    const prevLobby = LobbyManagement.popLobby();
-    window.navigateTo(prevLobby, false);
+    if (event.state && event.state.lobbyId) { 
+        isFirstLoadFromIntro = false;
+        window.navigateTo(event.state.lobbyId, false); 
+    } 
+    else { 
+        isFirstLoadFromIntro = false;
+        window.navigateTo('mainContentWrapper', false); 
+    }
   };
 
   const genreOptions = ["Action", "Adventure", "Comedy", "Drama", "Fantasy", "Horror", "Mystery", "Romance", "Sci-Fi", "Slice of Life", "Sports", "Supernatural", "Thriller", "Seinen", "Shounen"];
   const adminGenreDiv = document.getElementById('adminGenreList');
-  adminGenreDiv.innerHTML = genreOptions.map(g => `<label class="genre-option"><input type="checkbox" value="${g}" class="genre-checkbox"> ${g}</label>`).join('');
+  adminGenreDiv.innerHTML = genreOptions.map(g => <label class="genre-option"><input type="checkbox" value="${g}" class="genre-checkbox"> ${g}</label>).join('');
 
   const list = document.getElementById('mangaList');
-  list.innerHTML = Array(6).fill(0).map(() => `<div class="skeleton-loader" style="width:100%; aspect-ratio:3/4;"></div>`).join('');
+  list.innerHTML = Array(6).fill(0).map(() => <div class="skeleton-loader" style="width:100%; aspect-ratio:3/4;"></div>).join('');
   
   async function compressImage(file) {
       return new Promise((resolve) => {
@@ -1301,26 +1240,19 @@ input:checked + .slider:before { transform: translateX(20px); }
   window.handleFiles = function(files) { document.getElementById('fileStatus').innerText = files.length + " pages ready."; }
 
   function startMangaListener() {
-      if (isListenerActive) return; 
       if (unsubscribeManga) unsubscribeManga();
-      
       const mangaQuery = query(collection(db, "mangas"), orderBy("lastUpdated", "desc"), limit(currentLimit));
-      isListenerActive = true;
-      
       unsubscribeManga = onSnapshot(mangaQuery, (snapshot) => {
           window.mangas = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
           renderPublic(); renderFeatured(); renderShowcase(); renderHistory(); updateMangaSelect(); renderBookmarks();
           if(document.getElementById('detailPage').style.display === "block" && window.currentOpenMangaFbId) { openManga(window.currentOpenMangaFbId); }
-      }, (error) => {
-          isListenerActive = false;
-          console.error("Listener failed:", error);
       });
   }
 
   // Infinite Scroll Listener
   document.getElementById('mainContentWrapper').addEventListener('scroll', (e) => {
       const { scrollTop, scrollHeight, clientHeight } = e.target;
-      if (scrollTop + clientHeight >= scrollHeight - 300) { if (window.mangas.length >= currentLimit) { currentLimit += 6; isListenerActive = false; startMangaListener(); } }
+      if (scrollTop + clientHeight >= scrollHeight - 300) { if (window.mangas.length >= currentLimit) { currentLimit += 6; startMangaListener(); } }
   });
 
   startMangaListener();
@@ -1335,15 +1267,15 @@ input:checked + .slider:before { transform: translateX(20px); }
         const filtered = window.mangas.filter(m => m.name.toLowerCase().includes(queryStr)).slice(0, 5);
         if(filtered.length > 0) {
             dropdown.innerHTML = filtered.map(m => 
-                `<div class="search-item" onclick="openManga('${m.fbId}'); toggleSearch(false);">
+                <div class="search-item" onclick="openManga('${m.fbId}'); toggleSearch(false);">
                     <img src="${m.img}" alt="cover">
                     <div class="search-item-info">
                         <span class="search-item-title">${m.name}</span>
                         <span class="search-item-meta">⭐ ${m.rating || '4.9'} | ${(m.genres || ['Action'])[0]}</span>
                     </div>
-                </div>`).join('');
+                </div>).join('');
             dropdown.style.display = "flex";
-        } else { dropdown.innerHTML = `<div style="padding:15px; text-align:center; font-size:12px; opacity:0.5;">No results found</div>`; dropdown.style.display = "flex"; }
+        } else { dropdown.innerHTML = <div style="padding:15px; text-align:center; font-size:12px; opacity:0.5;">No results found</div>; dropdown.style.display = "flex"; }
     }, 300);
   }
 
@@ -1354,7 +1286,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     const rating = document.getElementById('mangaRating').value || "4.9";
     const btn = document.getElementById('createBtn');
     const selectedGenres = Array.from(document.querySelectorAll('.genre-checkbox:checked')).map(cb => cb.value);
-    if(!title || !imgInput.files[0] || selectedGenres.length === 0) return showStatus("Required fields empty","fail");
+    if(!ti !imgInput.files[0] ] || selectedGenres.length === 0) return showStatus("Required fields empty","fail");
     btn.disabled = true; showStatus("Uploading...", "success");
     try {
       const imageUrl = await processAndUpload(imgInput.files[0]);
@@ -1374,17 +1306,17 @@ input:checked + .slider:before { transform: translateX(20px); }
     const files = Array.from(document.getElementById('chapterFiles').files);
     const btn = document.getElementById('uploadBtn');
     
-    if(!selectedFbId || !cTitle || files.length === 0) return showStatus("Missing information!","fail");
+    if(!selectedF !cTitle e || files.length === 0) return showStatus("Missing information!","fail");
     
     btn.disabled = true; 
     let cloudUrls = [];
     const batchSize = 6; 
 
     try {
-      showStatus(`Starting Fast Upload... ⚡`, "success");
+      showStatus(Starting Fast Upload... ⚡, "success");
       for (let i = 0; i < files.length; i += batchSize) {
           const currentBatch = files.slice(i, i + batchSize);
-          showStatus(`Uploading Batch: ${Math.floor(i/batchSize) + 1} 🚀`, "success");
+          showStatus(Uploading Batch: ${Math.floor(i/batchSize) + 1} 🚀, "success");
           const batchPromises = currentBatch.map(file => processAndUpload(file));
           const results = await Promise.all(batchPromises);
           cloudUrls = [...cloudUrls, ...results];
@@ -1395,7 +1327,7 @@ input:checked + .slider:before { transform: translateX(20px); }
       const updatedChapters = [...(targetManga.chapters || []), { title: cTitle, pages: cloudUrls, views: 0, timestamp: now }];
       await updateDoc(doc(db, "mangas", selectedFbId), { chapters: updatedChapters, lastUpdated: now });
       document.getElementById('chapterTitle').value = ""; document.getElementById('chapterFiles').value = ""; document.getElementById('fileStatus').innerText = "No files selected";
-      showStatus(`Chapter Published Successfully! ✅`, "success");
+      showStatus(Chapter Published Successfully! ✅, "success");
     } catch(e) { showStatus("Upload Failed! Check connection.", "fail"); } finally { btn.disabled = false; }
   }
 
@@ -1416,10 +1348,7 @@ input:checked + .slider:before { transform: translateX(20px); }
       localStorage.removeItem('currentReadChapterIdx');
       window.currentOpenMangaFbId = null;
       if (window.location.hash) { history.replaceState("", document.title, window.location.pathname); }
-      
-      // PERMANENT LOBBY RESTORE
-      const lastActive = localStorage.getItem('activeLobbyId') || 'mainContentWrapper';
-      window.navigateTo(lastActive, false);
+      window.navigateTo('mainContentWrapper');
   });
 
   window.enterSite = () => {
@@ -1473,12 +1402,12 @@ input:checked + .slider:before { transform: translateX(20px); }
 
   function showStatus(t,type){ const s = document.getElementById('uploadStatus'); s.innerText=t; s.className=type+" show"; setTimeout(()=>s.className="",3000); }
   
+  // FIXED: updateMangaSelect preserves value
   function updateMangaSelect(){ 
     const select = document.getElementById('mangaSelect');
-    if(!select) return;
     const oldVal = select.value;
-    select.innerHTML = window.mangas.map(m => `<option value="${m.fbId}">${m.name}</option>`).join(''); 
-    if(oldVal && window.mangas.some(m => m.fbId === oldVal)) select.value = oldVal;
+    select.innerHTML = window.mangas.map(m => <option value="${m.fbId}">${m.name}</option>).join(''); 
+    if(oldVal) select.value = oldVal;
   }
 
   function shouldShowNewBadge(manga) {
@@ -1495,8 +1424,8 @@ input:checked + .slider:before { transform: translateX(20px); }
     if(window.mangas.length === 0) return;
     document.getElementById('mangaList').innerHTML = window.mangas.map((m, i) => {
       const animClass = isFirstLoadFromIntro ? 'animate-intro' : '';
-      const delay = isFirstLoadFromIntro ? `style="animation-delay: ${0.8 + (i * 0.05)}s"` : '';
-      return `
+      const delay = isFirstLoadFromIntro ? style="animation-delay: ${0.8 + (i * 0.05)}s" : '';
+      return 
       <div class="manga ${animClass}" onclick="openManga('${m.fbId}')" ${delay}>
         ${shouldShowNewBadge(m) ? '<div class="new-chapter-badge">New Update</div>' : ''}
         ${isNewCover(m) ? '<div class="premium-cover-badge">New</div>' : ''}
@@ -1504,23 +1433,24 @@ input:checked + .slider:before { transform: translateX(20px); }
             <img class="fade-in-img" src="${m.img}" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton-loader')">
         </div>
         <p>${m.name}</p>
-      </div>`;
+      </div>;
     }).join('');
   }
 
   let isDown = false, startX, currentPos = 0, animationId;
   const scrollSpeed = 0.5;
 
+  // FIXED: Ghosting fix for featured bar
   function renderFeatured(){
     const bar = document.getElementById('featuredBar'), track = document.getElementById('featuredTrack'), title = document.getElementById('popularTitleBar'), divider = document.getElementById('premDivider');
     if(window.mangas.length > 0) { 
       bar.style.display="block"; title.style.display="flex"; divider.style.display="block";
       const itemsHtml = window.mangas.map(m => 
-        `<div class="featuredItem" onclick="openManga('${m.fbId}')">
+        <div class="featuredItem" onclick="openManga('${m.fbId}')">
             <div class="skeleton-loader" style="width:145px; height:205px; border-radius:4px; overflow:hidden;">
                 <img class="fade-in-img" src="${m.img}" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton-loader')">
             </div>
-        </div>`).join('');
+        </div>).join('');
       track.innerHTML = itemsHtml + itemsHtml + itemsHtml; 
       startAutoScroll(); initDragEvents(bar, track);
     }
@@ -1529,14 +1459,14 @@ input:checked + .slider:before { transform: translateX(20px); }
   function startAutoScroll() {
     cancelAnimationFrame(animationId);
     const track = document.getElementById('featuredTrack');
-    function step() { if (!isDown && track) { currentPos -= scrollSpeed; const sw = track.scrollWidth / 3; if (Math.abs(currentPos) >= sw) currentPos = 0; track.style.transform = `translateX(${currentPos}px)`; } animationId = requestAnimationFrame(step); }
+    function step() { if (!isDown && track) { currentPos -= scrollSpeed; const sw = track.scrollWidth / 3; if (Math.abs(currentPos) >= sw) currentPos = 0; track.style.transform = translateX(${currentPos}px); } animationId = requestAnimationFrame(step); }
     animationId = requestAnimationFrame(step);
   }
 
   function initDragEvents(bar, track) {
     const handleStart = (e) => { isDown = true; startX = (e.pageX || e.touches[0].pageX) - currentPos; };
     const handleEnd = () => { isDown = false; };
-    const handleMove = (e) => { if (!isDown) return; const x = (e.pageX || e.touches[0].pageX); currentPos = x - startX; track.style.transform = `translateX(${currentPos}px)`; };
+    const handleMove = (e) => { if (!isDown) return; const x = (e.pageX || e.touches[0].pageX); currentPos = x - startX; track.style.transform = translateX(${currentPos}px); };
     bar.addEventListener('mousedown', handleStart); bar.addEventListener('touchstart', handleStart);
     window.addEventListener('mouseup', handleEnd); window.addEventListener('touchend', handleEnd);
     bar.addEventListener('mousemove', handleMove); bar.addEventListener('touchmove', handleMove);
@@ -1546,22 +1476,22 @@ input:checked + .slider:before { transform: translateX(20px); }
     const sc = document.getElementById('showcase');
     if(window.mangas.length > 0) sc.style.display="block";
     document.getElementById('showcaseTrack').innerHTML = window.mangas.map(m => 
-        `<div class="showcaseItem">
+        <div class="showcaseItem">
             <div class="skeleton-loader" style="width:100%; height:100%;">
                 <img class="fade-in-img" src="${m.img}" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton-loader')">
             </div>
-        </div>`).join('');
+        </div>).join('');
     if(window.showcaseTimer) clearInterval(window.showcaseTimer);
     let idx = 0;
     window.showcaseTimer = setInterval(() => { 
         idx = (idx + 1) % window.mangas.length; const track = document.getElementById('showcaseTrack');
-        if(track) track.style.transform = `translateX(-${idx * 100}%)`; 
+        if(track) track.style.transform = translateX(-${idx * 100}%); 
     }, 5000);
   }
 
   function renderHistory(){
     document.getElementById('historyList').innerHTML = window.mangas.map(m => 
-      `<div class="historyItem">
+      <div class="historyItem">
         <div class="manga-header-info">
           <img src="${m.img}" loading="lazy">
           <div class="historyInfo">
@@ -1571,9 +1501,9 @@ input:checked + .slider:before { transform: translateX(20px); }
           <div class="manga-del-btn" onclick="deleteManga('${m.fbId}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></div>
         </div>
         <div class="chapter-badge-container">
-          ${(m.chapters || []).map((ch, idx) => `<div class="chapter-chip"><span>${ch.title}</span><div class="del-btn" onclick="deleteChapter('${m.fbId}', ${idx})">✕</div></div>`).join('')}
+          ${(m.chapters || []).map((ch, idx) => <div class="chapter-chip"><span>${ch.title}</span><div class="del-btn" onclick="deleteChapter('${m.fbId}', ${idx})">✕</div></div>).join('')}
         </div>
-      </div>`).join('');
+      </div>).join('');
   }
 
   async function markChapterReadAndCount(mangaId, chapterIdx) {
@@ -1596,7 +1526,7 @@ input:checked + .slider:before { transform: translateX(20px); }
       const fbId = window.currentOpenMangaFbId;
       const chIdx = localStorage.getItem('currentReadChapterIdx');
       if (fbId && chIdx !== null) {
-          localStorage.setItem(`p_stat_${fbId}_${chIdx}`, JSON.stringify({ status: "completed", lastRead: Date.now() }));
+          localStorage.setItem(p_stat_${fbId}_${chIdx}, JSON.stringify({ status: "completed", lastRead: Date.now() }));
       }
   };
 
@@ -1605,9 +1535,9 @@ input:checked + .slider:before { transform: translateX(20px); }
     window.currentOpenMangaFbId = fbId;
     const m = window.mangas.find(x => x.fbId === fbId); if(!m) return;
     window.navigateTo('detailPage');
-    const genresHtml = (m.genres || ["Action"]).map(g => `<span class="genre-tag">${g}</span>`).join('');
+    const genresHtml = (m.genres || ["Action"]).map(g => <span class="genre-tag">${g}</span>).join('');
     const isBookmarked = JSON.parse(localStorage.getItem('bookmarks') || "[]").includes(fbId);
-    document.getElementById('lobbyInfo').innerHTML = `
+    document.getElementById('lobbyInfo').innerHTML = 
       <div class="lobby-top">
           <div class="lobby-left">
             <div class="skeleton-loader" style="width:130px; aspect-ratio:3/4; border-radius:10px; overflow:hidden;">
@@ -1620,30 +1550,30 @@ input:checked + .slider:before { transform: translateX(20px); }
             <button class="bookmark-toggle-btn ${isBookmarked ? 'active' : ''}" onclick="toggleBookmark('${fbId}')">${isBookmarked ? '✓ BOOKMARKED' : '+ ADD BOOKMARK'}</button>
           </div>
       </div>
-      <div class="manga-title-wrap"><h2 class="manga-title">${m.name}</h2><div class="manga-description">${m.description || 'No description available.'}</div></div>`;
+      <div class="manga-title-wrap"><h2 class="manga-title">${m.name}</h2><div class="manga-description">${m.description || 'No description available.'}</div></div>;
     
     let html = '<div id="chapterContainer" style="display: flex; flex-direction: column;">';
     if(!m.chapters || m.chapters.length === 0) {
         html = "<p style='text-align:center; opacity:0.3; padding:50px;'>NO CHAPTERS YET</p>";
     } else {
       const reversedChapters = [...m.chapters].reverse();
-      const lastReadIdx = parseInt(localStorage.getItem(`last_active_ch_${fbId}`));
+      const lastReadIdx = parseInt(localStorage.getItem(last_active_ch_${fbId}));
       reversedChapters.forEach((ch, rIdx) => {
         const originalIdx = m.chapters.length - 1 - rIdx;
-        const pStat = JSON.parse(localStorage.getItem(`p_stat_${fbId}_${originalIdx}`) || "{}");
+        const pStat = JSON.parse(localStorage.getItem(p_stat_${fbId}_${originalIdx}) || "{}");
         const isCompleted = pStat.status === "completed";
         const isLastRead = (originalIdx === lastReadIdx);
-        if (rIdx === 5) html += `<div id="moreChapters" class="hidden-chapters">`;
-        html += `
+        if (rIdx === 5) html += <div id="moreChapters" class="hidden-chapters">;
+        html += 
           <div class="chapter-item ${isCompleted ? 'fully-read' : ''}" onclick="openReadingLobby('${fbId}', ${originalIdx})">
             <div style="display:flex; flex-direction:column; gap:4px;">
                 <span style="color:white;">${ch.title}</span>
                 <div class="view-count">👁️ ${ch.views || 0} Views | ${ch.pages.length} Pages</div>
             </div>
             ${isLastRead ? '<span class="last-read-badge">ဒီနေရာထိ ဖတ်ထားပါတယ်</span>' : ''}
-          </div>`;
+          </div>;
       });
-      if (reversedChapters.length > 5) html += `</div><button id="showMoreBtn" class="show-more-btn" onclick="window.toggleChapters()">Show More Chapters</button>`;
+      if (reversedChapters.length > 5) html += </div><button id="showMoreBtn" class="show-more-btn" onclick="window.toggleChapters()">Show More Chapters</button>;
     }
     document.getElementById('chapterItemsContainer').innerHTML = html + "</div>";
   }
@@ -1659,7 +1589,7 @@ input:checked + .slider:before { transform: translateX(20px); }
       const m = window.mangas.find(x => x.fbId === fbId); 
       if(!m || !m.chapters[chIdx]) return;
       const ch = m.chapters[chIdx];
-      localStorage.setItem(`last_active_ch_${fbId}`, chIdx);
+      localStorage.setItem(last_active_ch_${fbId}, chIdx);
       localStorage.setItem('currentReadChapterIdx', chIdx);
       window.currentOpenMangaFbId = fbId;
       window.navigateTo('readingLobby');
@@ -1667,7 +1597,7 @@ input:checked + .slider:before { transform: translateX(20px); }
       markChapterReadAndCount(fbId, chIdx);
       totalPages = ch.pages.length; currentPageIndex = 0;
       document.getElementById('sidebarChapterList').innerHTML = m.chapters.map((c, i) => 
-          `<div class="sidebar-chapter-opt ${i === chIdx ? 'active' : ''}" onclick="openReadingLobby('${fbId}', ${i}); manualCloseSidebar();">${c.title}</div>`
+          <div class="sidebar-chapter-opt ${i === chIdx ? 'active' : ''}" onclick="openReadingLobby('${fbId}', ${i}); manualCloseSidebar();">${c.title}</div>
       ).join('');
       
       const nextBtn = document.getElementById('nextChapterBtn');
@@ -1713,7 +1643,7 @@ input:checked + .slider:before { transform: translateX(20px); }
           imgElements[i].wrapper.style.background = 'transparent';
           imgElements[i].wrapper.classList.remove('page-placeholder');
       }
-      if(currentReadMode === 'page') container.style.transform = `translateX(0)`;
+      if(currentReadMode === 'page') container.style.transform = translateX(0);
   }
 
   window.toggleReadingSidebar = (e) => {
@@ -1762,7 +1692,7 @@ input:checked + .slider:before { transform: translateX(20px); }
       container.ontouchmove = e => {
           if (!isMoving) return;
           const currentX = e.touches[0].clientX, currentY = e.touches[0].clientY;
-          if (Math.abs(currentX - touchStartX) > Math.abs(currentY - touchStartY)) { container.style.transform = `translateX(${-(currentPageIndex * window.innerWidth) + (currentX - touchStartX)}px)`; e.preventDefault(); }
+          if (Math.abs(currentX - touchStartX) > Math.abs(currentY - touchStartY)) { container.style.transform = translateX(${-(currentPageIndex * window.innerWidth) + (currentX - touchStartX)}px); e.preventDefault(); }
       };
       container.ontouchend = e => {
           if (!isMoving) return; isMoving = false;
@@ -1772,14 +1702,14 @@ input:checked + .slider:before { transform: translateX(20px); }
               if (diff > 0 && currentPageIndex < totalPages - 1) currentPageIndex++;
               else if (diff < 0 && currentPageIndex > 0) currentPageIndex--;
           }
-          container.style.transform = `translateX(-${currentPageIndex * 100}vw)`;
+          container.style.transform = translateX(-${currentPageIndex * 100}vw);
       };
       container.onclick = (e) => {
         if(currentReadMode !== 'page') return;
         if(e.clientX > window.innerWidth * 0.65 && currentPageIndex < totalPages - 1) currentPageIndex++;
         else if(e.clientX < window.innerWidth * 0.35 && currentPageIndex > 0) currentPageIndex--;
         container.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
-        container.style.transform = `translateX(-${currentPageIndex * 100}vw)`;
+        container.style.transform = translateX(-${currentPageIndex * 100}vw);
       };
   }
 
@@ -1800,23 +1730,15 @@ input:checked + .slider:before { transform: translateX(20px); }
     const b = JSON.parse(localStorage.getItem('bookmarks') || "[]"), container = document.getElementById('bookmarkList');
     if(b.length === 0) { container.innerHTML = "<p style='grid-column: 1/-1; text-align:center; opacity:0.4; padding:100px 0;'>No bookmarks yet. ❤️</p>"; return; }
     container.innerHTML = window.mangas.filter(m => b.includes(m.fbId)).map(m => 
-      `<div class="manga" onclick="openManga('${m.fbId}')">
+      <div class="manga" onclick="openManga('${m.fbId}')">
         ${shouldShowNewBadge(m) ? '<div class="new-chapter-badge">New Update</div>' : ''}
         ${isNewCover(m) ? '<div class="premium-cover-badge">New</div>' : ''}
         <div class="skeleton-loader" style="width:100%; aspect-ratio:3/4; border-radius:10px; overflow:hidden;">
             <img class="fade-in-img" src="${m.img}" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton-loader')">
         </div>
         <p>${m.name}</p>
-      </div>`).join('');
+      </div>).join('');
   }
-
-  // --- TAB CLOSURE / NEW LINK RESET LOGIC ---
-  if (!sessionStorage.getItem('is_session_active')) {
-      // First time in this tab/window, reset lobbies but keep manga progress
-      LobbyManagement.resetLobby();
-      sessionStorage.setItem('is_session_active', 'true');
-  }
-
 </script>
 </body>
 </html>

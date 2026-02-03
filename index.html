@@ -1096,7 +1096,7 @@ input:checked + .slider:before { transform: translateX(20px); }
           .catch((err) => console.log("SW Error:", err));
   }
 
-  // FIXED: Sequential Image Load to prevent layout shift
+  // FIXED: Sequential Image Load with RAM Clear Logic
   async function secureImageLoad(imgElement, imageUrl) {
       return new Promise((resolve) => {
           const parent = imgElement.parentElement;
@@ -1110,6 +1110,11 @@ input:checked + .slider:before { transform: translateX(20px); }
               imgElement.classList.add('loaded');
               imgElement.setAttribute('draggable', 'false');
               if (parent) parent.classList.remove('skeleton-loader');
+              
+              // Memory Clean-up logic (If using object URLs in future)
+              if(imageUrl.startsWith('blob:')) {
+                  URL.revokeObjectURL(imageUrl);
+              }
               resolve();
           };
           img.onerror = () => {
@@ -1140,34 +1145,58 @@ input:checked + .slider:before { transform: translateX(20px); }
   
   let currentLimit = 6;
   let unsubscribeManga = null;
+  let isListenerActive = false; // Prevent multiple listeners
   let shouldAnimateMangas = true;
   let isFirstLoadFromIntro = false;
   const lobbyScrollMemory = {};
   
-  // FIXED: NavigateTo function for cleaner state management
+  // FIXED: NavigateTo function for cleaner state management & Display Fix
   window.navigateTo = function(targetId, updateHistory = true) {
     if (!targetId) return;
-    if (updateHistory) { history.pushState({ lobbyId: targetId }, "", ""); }
     
-    const allLobbies = document.querySelectorAll('.app-lobby');
-    allLobbies.forEach(l => {
-      if (getComputedStyle(l).display === 'block') { 
-          lobbyScrollMemory[l.id] = l.scrollTop; 
+    const allLobbies = ['mainContentWrapper', 'detailPage', 'readingLobby', 'bookmarkPage'];
+    
+    allLobbies.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+          if (getComputedStyle(el).display === 'block') { 
+              lobbyScrollMemory[id] = el.scrollTop; 
+          }
+          el.style.display = 'none';
       }
-      l.style.display = 'none';
     });
     
     const target = document.getElementById(targetId);
     if (target) {
       target.style.display = 'block'; 
+      localStorage.setItem('activeLobbyId', targetId); // Save state
       const savedPos = lobbyScrollMemory[targetId] || 0;
+      
       if(targetId === 'mainContentWrapper') { 
           shouldAnimateMangas = true; 
           renderPublic(); 
       }
       setTimeout(() => { target.scrollTop = savedPos; }, 10);
     }
+    
+    if (updateHistory) { history.pushState({ lobbyId: targetId }, "", ""); }
   };
+
+  // Background to Foreground Restoration Logic
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        const currentLobby = localStorage.getItem('activeLobbyId');
+        if (!currentLobby || currentLobby === 'undefined') {
+            window.navigateTo('mainContentWrapper');
+        } else {
+            // Re-verify display
+            const el = document.getElementById(currentLobby);
+            if (el && getComputedStyle(el).display === 'none') {
+                window.navigateTo(currentLobby, false);
+            }
+        }
+    }
+  });
 
   window.showToast = function(message) {
       const toast = document.getElementById("toastBox");
@@ -1240,19 +1269,26 @@ input:checked + .slider:before { transform: translateX(20px); }
   window.handleFiles = function(files) { document.getElementById('fileStatus').innerText = files.length + " pages ready."; }
 
   function startMangaListener() {
+      if (isListenerActive) return; 
       if (unsubscribeManga) unsubscribeManga();
+      
       const mangaQuery = query(collection(db, "mangas"), orderBy("lastUpdated", "desc"), limit(currentLimit));
+      isListenerActive = true;
+      
       unsubscribeManga = onSnapshot(mangaQuery, (snapshot) => {
           window.mangas = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
           renderPublic(); renderFeatured(); renderShowcase(); renderHistory(); updateMangaSelect(); renderBookmarks();
           if(document.getElementById('detailPage').style.display === "block" && window.currentOpenMangaFbId) { openManga(window.currentOpenMangaFbId); }
+      }, (error) => {
+          isListenerActive = false;
+          console.error("Listener failed:", error);
       });
   }
 
   // Infinite Scroll Listener
   document.getElementById('mainContentWrapper').addEventListener('scroll', (e) => {
       const { scrollTop, scrollHeight, clientHeight } = e.target;
-      if (scrollTop + clientHeight >= scrollHeight - 300) { if (window.mangas.length >= currentLimit) { currentLimit += 6; startMangaListener(); } }
+      if (scrollTop + clientHeight >= scrollHeight - 300) { if (window.mangas.length >= currentLimit) { currentLimit += 6; isListenerActive = false; startMangaListener(); } }
   });
 
   startMangaListener();
@@ -1348,7 +1384,9 @@ input:checked + .slider:before { transform: translateX(20px); }
       localStorage.removeItem('currentReadChapterIdx');
       window.currentOpenMangaFbId = null;
       if (window.location.hash) { history.replaceState("", document.title, window.location.pathname); }
-      window.navigateTo('mainContentWrapper');
+      
+      const lastActive = localStorage.getItem('activeLobbyId') || 'mainContentWrapper';
+      window.navigateTo(lastActive);
   });
 
   window.enterSite = () => {
@@ -1405,9 +1443,10 @@ input:checked + .slider:before { transform: translateX(20px); }
   // FIXED: updateMangaSelect preserves value
   function updateMangaSelect(){ 
     const select = document.getElementById('mangaSelect');
+    if(!select) return;
     const oldVal = select.value;
     select.innerHTML = window.mangas.map(m => `<option value="${m.fbId}">${m.name}</option>`).join(''); 
-    if(oldVal) select.value = oldVal;
+    if(oldVal && window.mangas.some(m => m.fbId === oldVal)) select.value = oldVal;
   }
 
   function shouldShowNewBadge(manga) {
@@ -1742,4 +1781,3 @@ input:checked + .slider:before { transform: translateX(20px); }
 </script>
 </body>
 </html>
-

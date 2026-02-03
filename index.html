@@ -46,6 +46,15 @@ html, body {
 .fade-in-img { opacity: 0; transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
 .fade-in-img.loaded { opacity: 1; }
 
+/* PREMIUM RETRY UI SETTINGS */
+.image-retry-container { position: relative; width: 100%; display: flex; align-items: center; justify-content: center; background: #0a0a0a; overflow: hidden; }
+.retry-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); z-index: 10; opacity: 0; pointer-events: none; transition: 0.3s; }
+.retry-overlay.active { opacity: 1; pointer-events: auto; }
+.retry-icon-btn { width: 50px; height: 50px; background: var(--glass); border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.retry-icon-btn svg { width: 25px; height: 25px; fill: white; }
+.retry-icon-btn:active { transform: scale(0.9) rotate(180deg); background: var(--accent); }
+.retry-text { font-size: 10px; font-weight: 800; color: white; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px; }
+
 @keyframes newBadgeGlow { from { opacity: 0.6; box-shadow: 0 0 5px var(--accent); } to { opacity: 1; box-shadow: 0 0 15px var(--accent); } }
 .new-chapter-badge { position: absolute; top: 6px; right: 6px; background: var(--accent); color: #fff; font-size: 8px; font-weight: 900; padding: 3px 6px; border-radius: 4px; text-transform: uppercase; z-index: 5; animation: newBadgeGlow 1.2s infinite alternate; letter-spacing: 0.5px; pointer-events: none; }
 
@@ -444,27 +453,60 @@ input:checked + .slider:before { transform: translateX(20px); }
           .catch((err) => console.log("SW Error:", err));
   }
 
-  /* --- ENGINE 5.0 IMAGE LOADER WITH PREDICTIVE CACHING --- */
+  /* --- ENGINE 5.0 IMAGE LOADER WITH INDIVIDUAL RETRY --- */
   async function secureImageLoad(imgElement, imageUrl) {
       return new Promise((resolve) => {
           const parent = imgElement.parentElement;
           if (parent) parent.classList.add('skeleton-loader');
           imgElement.classList.add('fade-in-img');
           
+          // Create Retry Overlay
+          const overlay = document.createElement('div');
+          overlay.className = 'retry-overlay';
+          overlay.innerHTML = `
+            <div class="retry-icon-btn">
+                <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            </div>
+            <span class="retry-text">Retry Image</span>
+          `;
+          
+          if(parent && !parent.querySelector('.retry-overlay')) {
+              parent.style.position = 'relative';
+              parent.appendChild(overlay);
+          }
+
           const img = new Image();
           img.src = imageUrl;
+          
           img.onload = () => {
               imgElement.src = imageUrl;
               imgElement.classList.add('loaded');
               imgElement.setAttribute('draggable', 'false');
-              if (parent) parent.classList.remove('skeleton-loader');
+              if (parent) {
+                  parent.classList.remove('skeleton-loader');
+                  const ov = parent.querySelector('.retry-overlay');
+                  if(ov) ov.classList.remove('active');
+              }
               resolve();
           };
+
           img.onerror = () => {
-              imgElement.src = "https://via.placeholder.com/300x450?text=Error+Loading";
-              imgElement.classList.add('loaded');
-              if (parent) parent.classList.remove('skeleton-loader');
-              resolve();
+              // ပုံမပေါ်ရင် Loading ဝဲနေတာရပ်ပြီး Retry Icon ပြမယ်
+              if (parent) {
+                  parent.classList.remove('skeleton-loader');
+                  const ov = parent.querySelector('.retry-overlay');
+                  if(ov) {
+                      ov.classList.add('active');
+                      ov.onclick = () => {
+                          ov.classList.remove('active');
+                          parent.classList.add('skeleton-loader');
+                          // Cache မဖြစ်အောင် timestamp ထည့်ပြီး ပြန်ဆွဲမယ်
+                          const retryUrl = imageUrl.includes('?') ? imageUrl + '&t=' + Date.now() : imageUrl + '?t=' + Date.now();
+                          secureImageLoad(imgElement, retryUrl).then(resolve);
+                      };
+                  }
+              }
+              resolve(); 
           };
       });
   }
@@ -641,7 +683,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     btn.disabled = false;
   }
 
-  /* --- MODIFIED: uploadChapter with Enhanced Notification & Progress Bar --- */
+  /* --- uploadChapter with Enhanced Notification & Progress Bar --- */
   window.uploadChapter = async function() {
     const selectedFbId = document.getElementById('mangaSelect').value;
     const cTitle = document.getElementById('chapterTitle').value;
@@ -662,18 +704,11 @@ input:checked + .slider:before { transform: translateX(20px); }
     try {
       showStatus(`Initializing Upload... ⚡`, "success");
       
-      // Uploading one by one to show detailed progress (1/100)
       for (let i = 0; i < totalFiles; i++) {
           const currentNumber = i + 1;
-          
-          // Show Detailed Notification: Uploading photo 1/100
           showStatus(`Uploading photo ${currentNumber}/${totalFiles} 🚀`, "success");
-          
-          // Real-time Progress Bar update
           let progressPercent = (currentNumber / totalFiles) * 100;
           progressBar.style.width = `${progressPercent}%`;
-
-          // Process and Upload single file
           const result = await processAndUpload(files[i]);
           cloudUrls.push(result);
       }
@@ -684,12 +719,11 @@ input:checked + .slider:before { transform: translateX(20px); }
       
       await updateDoc(doc(db, "mangas", selectedFbId), { chapters: updatedChapters, lastUpdated: now });
       
-      // Clear inputs
       document.getElementById('chapterTitle').value = ""; 
       document.getElementById('chapterFiles').value = ""; 
       document.getElementById('fileStatus').innerText = "No files selected";
       
-      progressBar.style.background = "#4CAF50"; // Turn Green on success
+      progressBar.style.background = "#4CAF50"; 
       showStatus(`Chapter Published Successfully! ✅`, "success");
       
       setTimeout(() => { 
@@ -700,7 +734,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 
     } catch(e) { 
       showStatus("Upload Failed!", "fail"); 
-      progressBar.style.background = "#f44336"; // Turn Red on error
+      progressBar.style.background = "#f44336"; 
     } finally { 
       btn.disabled = false; 
     }
@@ -765,6 +799,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     setTimeout(() => {
         document.body.classList.toggle("light");
         const isLight = document.body.classList.contains("light");
+        sun.style.display = "block"; // Placeholder - keep logic same as user provided
         sun.style.display = isLight ? "block" : "none"; moon.style.display = isLight ? "none" : "block";
         iconWrapper.classList.remove('rotate-anim');
     }, 300);
@@ -975,6 +1010,14 @@ input:checked + .slider:before { transform: translateX(20px); }
       const m = window.mangas.find(x => x.fbId === fbId); 
       if(!m || !m.chapters[chIdx]) return;
       const ch = m.chapters[chIdx];
+
+      // --- SCROLL FIX FOR READING LOBBY ---
+      const lobbyContainer = document.getElementById('readingLobby');
+      lobbyContainer.style.display = 'block'; // Ensure it's displayed
+      // Reset scroll position to TOP instantly when opening a new chapter
+      lobbyContainer.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      // ------------------------------------
+
       localStorage.setItem(`last_active_ch_${fbId}`, chIdx);
       localStorage.setItem('currentReadChapterIdx', chIdx);
       window.currentOpenMangaFbId = fbId;
@@ -996,9 +1039,11 @@ input:checked + .slider:before { transform: translateX(20px); }
       const savedStatus = localStorage.getItem('headBarStatus') !== 'off';
       hbToggle.checked = savedStatus; applyHeadBarSetting(savedStatus);
       applyReadMode(); 
-      const container = document.getElementById('readingLobby');
-      container.scrollTop = 0;
-      renderPagesSequentially(ch.pages).then(() => { container.scrollTop = 0; });
+      
+      // Secondary safety scroll to top
+      renderPagesSequentially(ch.pages).then(() => { 
+          document.getElementById('readingLobby').scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      });
   }
 
   function applyHeadBarSetting(show) {
@@ -1025,6 +1070,8 @@ input:checked + .slider:before { transform: translateX(20px); }
       pages.forEach((p) => {
           const wrapper = document.createElement('div');
           wrapper.className = currentReadMode === 'scroll' ? 'page-placeholder' : 'page-item';
+          // Wrap with retry container class
+          wrapper.classList.add('image-retry-container');
           const img = document.createElement('img'); wrapper.appendChild(img); container.appendChild(wrapper);
           imgElements.push({ img, url: p, wrapper });
       });
@@ -1134,3 +1181,4 @@ input:checked + .slider:before { transform: translateX(20px); }
 </script>
 </body>
 </html>
+

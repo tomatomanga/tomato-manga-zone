@@ -355,12 +355,20 @@ input:checked + .slider:before { transform: translateX(20px); }
   </div>
   
   <div id="adminForm" style="display:none">
-    <div class="admin-section-title">Cloudinary Server Settings</div>
+    <div class="admin-section-title">Server Settings</div>
+<label class="input-label">Select Active Server</label>
+<select id="serverEngineSelector" style="background:#151515; color:#fff; border:1px solid #ff2a2a; margin-bottom:15px; padding:10px; border-radius:8px; width: 100%;" onchange="toggleEngineFields()">
+    <option value="cloudinary">Cloudinary Server (Stable)</option>
+    <option value="telegraph">Telegra.ph Server (Unlimited)</option>
+</select>
+
+<div id="cloudinaryOptions">
     <label class="input-label">Select Active Account</label>
-    <select id="cloudinaryAccountSelector" style="background:#1a1a1a; color:#fff; border:1px solid #ff2a2a; margin-bottom:15px; padding:10px; border-radius:8px; width: 100%;">
+    <select id="cloudinaryAccountSelector" style="background:#151515; color:#fff; border:1px solid #ff2a2a; margin-bottom:15px; padding:10px; border-radius:8px; width: 100%;">
         <option value="acc_1">Account 1</option>
         <option value="acc_2">Account 2</option>
     </select>
+</div>
 
     <div class="admin-section-title">Step 1: New Manga</div>
     <label class="input-label">Manga Title</label>
@@ -668,25 +676,51 @@ input:checked + .slider:before { transform: translateX(20px); }
       });
   }
 
-  // --- UPDATED PROCESS AND UPLOAD TO USE SELECTED ACCOUNT ---
+  // --- ၂။ UPDATED PROCESS AND UPLOAD (Telegraph + Cloudinary Support) ---
+  // ဒီ function က Admin ရွေးထားတဲ့ Server ပေါ်မူတည်ပြီး အလိုအလျောက် ပို့ပေးပါလိမ့်မယ်
   async function processAndUpload(file) {
+      const engine = document.getElementById('serverEngineSelector').value;
       await checkFileIntegrity(file); 
       const optimizedFile = await compressImage(file);
       
-      // Get selected account info
-      const selectedAccKey = document.getElementById('cloudinaryAccountSelector').value;
-      const config = CLOUDINARY_CONFIGS[selectedAccKey];
+      if (engine === 'telegraph') {
+          // Telegra.ph Server သို့ တင်ခြင်း
+          const formData = new FormData();
+          formData.append('file', optimizedFile);
+          try {
+              const response = await fetch('https://graph.org/upload', {
+    method: 'POST',
+    body: formData
+});
+const data = await response.json();
+return "https://images1-focus-opensocial.googleusercontent.com/gadgets/proxy?container=focus&refresh=2592000&url=" + encodeURIComponent("https://graph.org" + data[0].src);
+          } catch (err) {
+              console.error("Telegraph Error:", err);
+              return null;
+          }
+      } else {
+          // Cloudinary Server သို့ တင်ခြင်း (မူလအတိုင်း)
+          const selectedAccKey = document.getElementById('cloudinaryAccountSelector').value;
+          const config = CLOUDINARY_CONFIGS[selectedAccKey];
 
-      const formData = new FormData();
-      formData.append("file", optimizedFile); 
-      formData.append("upload_preset", config.preset);
+          const formData = new FormData();
+          formData.append("file", optimizedFile); 
+          formData.append("upload_preset", config.preset);
 
-      try {
-          const res = await fetch(config.url, { method: "POST", body: formData });
-          const data = await res.json(); 
-          return data.secure_url;
-      } catch (e) { throw e; }
+          try {
+              const res = await fetch(config.url, { method: "POST", body: formData });
+              const data = await res.json(); 
+              return data.secure_url;
+          } catch (e) { throw e; }
+      }
   }
+
+  // Server ရွေးတာနဲ့ UI ကို ပြောင်းလဲပေးတဲ့ function
+  window.toggleEngineFields = function() {
+      const engine = document.getElementById('serverEngineSelector').value;
+      const clOptions = document.getElementById('cloudinaryOptions');
+      if(clOptions) clOptions.style.display = (engine === 'telegraph') ? 'none' : 'block';
+  };
 
   window.handleFiles = function(files) { document.getElementById('fileStatus').innerText = files.length + " pages ready."; }
 
@@ -1056,7 +1090,6 @@ input:checked + .slider:before { transform: translateX(20px); }
   };
 
   async function markChapterReadAndCount(mangaId, chapterIdx) {
-    // ၃။ Auto mark as read feature တွဲသုံးမယ်
     window.markAsRead(mangaId, chapterIdx);
 
     let readHistory = JSON.parse(localStorage.getItem('read_chapters') || "{}");
@@ -1108,7 +1141,6 @@ input:checked + .slider:before { transform: translateX(20px); }
       </div>
       <div class="manga-title-wrap"><h2 class="manga-title">${m.name}</h2><div class="manga-description">${m.description || 'No description available.'}</div></div>`;
     
-    // ၃။ ဖတ်ပြီးသား Chapter တွေကို Check လုပ်ဖို့ Data ယူမယ်
     const readHistory = JSON.parse(localStorage.getItem('readChapters')) || {};
     const mangaReadList = readHistory[fbId] || [];
 
@@ -1128,8 +1160,6 @@ input:checked + .slider:before { transform: translateX(20px); }
         const pStat = JSON.parse(localStorage.getItem(`p_stat_${fbId}_${originalIdxInDb}`) || "{}");
         const isCompleted = pStat.status === "completed";
         const isLastRead = (originalIdxInDb === lastReadIdx);
-        
-        // ၃။ ဖတ်ပြီးသားဆိုရင် 'read' class ထည့်မယ်
         const hasReadClass = mangaReadList.includes(originalIdxInDb) ? 'read' : '';
         
         if (rIdx === 5) html += `<div id="moreChapters" class="hidden-chapters">`;
@@ -1172,7 +1202,6 @@ input:checked + .slider:before { transform: translateX(20px); }
       window.navigateTo('readingLobby');
       document.getElementById('readingTitle').innerText = ch.title;
       
-      // ၃။ Chapter ကို ဝင်လိုက်တာနဲ့ Auto Count လုပ်မယ်
       markChapterReadAndCount(fbId, chIdx);
       
       totalPages = ch.pages.length; 

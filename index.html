@@ -159,6 +159,14 @@ html, body {
 .chapter-list-header { font-family: 'Cinzel', serif; font-size: 18px; font-weight: 900; color: var(--text); margin-bottom: 20px; letter-spacing: 2px; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
 
 .chapter-item { background: var(--card); padding: 15px 20px; border-radius: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: 0.3s; position: relative; border-left: 4px solid #ff2a2a; }
+
+/* ၃။ User: Read Chapter Gray Out - မိန်သွားအောင်လုပ်တာ */
+.chapter-item.read {
+    opacity: 0.5;
+    background: #111 !important; /* နဂိုအရောင်ထက် ပိုမှောင်အောင် */
+    border-left: 4px solid #555; /* ဘေးက အရောင်ကိုပါ မိန်ပစ်မယ် */
+}
+
 .chapter-item.fully-read { opacity: 0.25; }
 .last-read-badge { background: linear-gradient(90deg, #ff2a2a, #ff7b7b); color: white; font-size: 9px; padding: 3px 10px; border-radius: 4px; font-weight: bold; text-transform: uppercase; box-shadow: 0 0 10px rgba(255, 42, 42, 0.3); }
 
@@ -217,6 +225,39 @@ input:checked + .slider:before { transform: translateX(20px); }
 .genre-option { display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; color: #bbb; }
 .genre-option input { width: auto !important; margin: 0 !important; accent-color: var(--accent); }
 
+/* ၁။ Admin: Chapter Chips Show More/Less - သပ်သပ်ရပ်ရပ်ဖြစ်အောင် */
+.mgmt-chapter-list {
+    max-height: 85px; /* အတန်း ၂ တန်းခန့်ပြမယ် */
+    overflow: hidden;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    transition: max-height 0.3s ease;
+}
+.mgmt-chapter-list.expanded { max-height: 2000px; }
+.mgmt-toggle-btn {
+    background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 5px 12px;
+    border-radius: 4px; font-size: 10px; cursor: pointer; margin-top: 10px; color: #888; text-transform: uppercase;
+}
+
+/* ၂။ Admin: Premium Confirmation Modal - ဖျက်မယ့် Popup */
+.confirm-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+    display: none; justify-content: center; align-items: center; z-index: 100000;
+}
+.confirm-overlay.active { display: flex; }
+.confirm-box {
+    background: #111; padding: 30px; border-radius: 15px;
+    width: 320px; text-align: center; border: 1px solid var(--accent);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.9);
+}
+.confirm-box h3 { font-family: 'Cinzel', serif; font-size: 16px; margin-bottom: 20px; color: white; }
+.confirm-btns { display: flex; justify-content: space-around; gap: 10px; }
+.btn-confirm { flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 12px; }
+.btn-yes { background: var(--accent); color: white; }
+.btn-no { background: #333; color: #ccc; }
+
 /* Custom Progress Bar for Upload */
 #uploadProgressWrapper { width: 100%; background: #222; border-radius: 10px; height: 10px; margin-top: 10px; display: none; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
 #uploadProgressBar { width: 0%; height: 100%; background: #2196F3; transition: width 0.3s ease; box-shadow: 0 0 10px #2196F3; }
@@ -247,6 +288,16 @@ input:checked + .slider:before { transform: translateX(20px); }
 <body>
 <div id="toastBox" class="toast-msg"></div>
 
+<div id="confirmOverlay" class="confirm-overlay">
+    <div class="confirm-box">
+        <h3>ဤ Manga တစ်ခုလုံးကို ဖျက်ရန် သေချာပါသလား?</h3>
+        <div class="confirm-btns">
+            <button class="btn-confirm btn-yes" id="confirmYes">YES, DELETE</button>
+            <button class="btn-confirm btn-no" id="confirmNo">CANCEL</button>
+        </div>
+    </div>
+</div>
+
 <div id="intro">
   <div id="introBg"></div>
   <h1>TOMATO MANGA ZONE</h1>
@@ -271,7 +322,7 @@ input:checked + .slider:before { transform: translateX(20px); }
         </div>
         <div id="headerRight">
           <div class="iconBtn" id="themeBtn">
-            <svg id="sunIcon" style="display:none;" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5 5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s-.45-1 1-1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s-1 .45-1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0 .55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
+            <svg id="sunIcon" style="display:none;" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5 5-2.24 5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s-.45-1 1-1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s-1 .45-1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0 .55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
             <svg id="moonIcon" viewBox="0 0 24 24"><path d="M12.1 22c4.8 0 8.7-3.6 9-8.3-.5.4-1.1.7-1.7.9-1.2.4-2.4.5-3.6.2-3.1-.7-5.4-3.5-5.3-6.7.1-1.7.7-3.2 1.6-4.5-5.2-.4-9.6 3.7-9.6 8.9 0 5.2 4.3 9.5 9.6 9.5z"/></svg>
           </div>
           <div class="iconBtn" onclick="toggleAdmin()">
@@ -748,9 +799,29 @@ input:checked + .slider:before { transform: translateX(20px); }
     }
   }
 
-  window.deleteManga = async function(fbId) { 
-    try { showStatus("Removing...", "success"); await deleteDoc(doc(db, "mangas", fbId)); showStatus("Removed!", "success"); } catch(e) { showStatus("Error", "fail"); } 
-  }
+  /* --- ၂။ Admin: Premium Delete Manga Logic - ဖျက်မယ့် Logic --- */
+  let mangaToDelete = null;
+  window.deleteManga = function(fbId) {
+      mangaToDelete = fbId;
+      document.getElementById('confirmOverlay').classList.add('active');
+  };
+
+  document.getElementById('confirmNo').onclick = () => {
+      document.getElementById('confirmOverlay').classList.remove('active');
+      mangaToDelete = null;
+  };
+
+  document.getElementById('confirmYes').onclick = async () => {
+      if (mangaToDelete) {
+          try {
+              document.getElementById('confirmOverlay').classList.remove('active');
+              showStatus("Removing...", "success");
+              await deleteDoc(doc(db, "mangas", mangaToDelete));
+              showStatus("Removed!", "success");
+          } catch(e) { showStatus("Error", "fail"); }
+          mangaToDelete = null;
+      }
+  };
 
   window.deleteChapter = async function(mId, idx) { 
     try { 
@@ -912,9 +983,21 @@ input:checked + .slider:before { transform: translateX(20px); }
     }, 5000);
   }
 
+  /* --- ၁။ Admin: Toggle Chapter List expanded --- */
+  window.toggleMgmtChapters = function(fbId) {
+      const list = document.getElementById(`mgmt-list-${fbId}`);
+      const btn = document.getElementById(`mgmt-btn-${fbId}`);
+      if (list.classList.contains('expanded')) {
+          list.classList.remove('expanded');
+          btn.innerText = "Show More Chapters";
+      } else {
+          list.classList.add('expanded');
+          btn.innerText = "Show Less";
+      }
+  };
+
   window.renderHistory = function(){
     document.getElementById('historyList').innerHTML = window.mangas.map(m => {
-      // Logic: chapter_number မရှိရင် Title ထဲက နံပါတ်ကို ဆွဲထုတ်ပြီး စီသည်
       const sortedHistoryChapters = [...(m.chapters || [])].sort((a, b) => {
           const numA = a.chapter_number || parseFloat(a.title.replace(/[^0-9.]/g, '')) || 0;
           const numB = b.chapter_number || parseFloat(b.title.replace(/[^0-9.]/g, '')) || 0;
@@ -930,13 +1013,27 @@ input:checked + .slider:before { transform: translateX(20px); }
           </div>
           <div class="manga-del-btn" onclick="deleteManga('${m.fbId}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></div>
         </div>
-        <div class="chapter-badge-container">
+        <div class="mgmt-chapter-list" id="mgmt-list-${m.fbId}">
           ${sortedHistoryChapters.map((ch) => `<div class="chapter-chip"><span>${ch.title}</span><div class="del-btn" onclick="deleteChapter('${m.fbId}', ${m.chapters.indexOf(ch)})">✕</div></div>`).join('')}
         </div>
+        ${sortedHistoryChapters.length > 4 ? `<button class="mgmt-toggle-btn" id="mgmt-btn-${m.fbId}" onclick="toggleMgmtChapters('${m.fbId}')">Show More Chapters</button>` : ''}
       </div>`}).join('');
   }
 
+  /* --- ၃။ User: Auto Mark as Read - ဖတ်ပြီးသားမှတ်သားခြင်း --- */
+  window.markAsRead = function(mangaFbId, chapterIndex) {
+      let readHistory = JSON.parse(localStorage.getItem('readChapters')) || {};
+      if (!readHistory[mangaFbId]) { readHistory[mangaFbId] = []; }
+      if (!readHistory[mangaFbId].includes(chapterIndex)) {
+          readHistory[mangaFbId].push(chapterIndex);
+          localStorage.setItem('readChapters', JSON.stringify(readHistory));
+      }
+  };
+
   async function markChapterReadAndCount(mangaId, chapterIdx) {
+    // ၃။ Auto mark as read feature တွဲသုံးမယ်
+    window.markAsRead(mangaId, chapterIdx);
+
     let readHistory = JSON.parse(localStorage.getItem('read_chapters') || "{}");
     if(!readHistory[mangaId]) readHistory[mangaId] = [];
     if(!readHistory[mangaId].includes(chapterIdx)) {
@@ -986,10 +1083,13 @@ input:checked + .slider:before { transform: translateX(20px); }
       </div>
       <div class="manga-title-wrap"><h2 class="manga-title">${m.name}</h2><div class="manga-description">${m.description || 'No description available.'}</div></div>`;
     
+    // ၃။ ဖတ်ပြီးသား Chapter တွေကို Check လုပ်ဖို့ Data ယူမယ်
+    const readHistory = JSON.parse(localStorage.getItem('readChapters')) || {};
+    const mangaReadList = readHistory[fbId] || [];
+
     let html = '<div id="chapterContainer" style="display: flex; flex-direction: column;">';
     if(!m.chapters || m.chapters.length === 0) { html = "<p style='text-align:center; opacity:0.3; padding:50px;'>NO CHAPTERS YET</p>"; } 
     else {
-      // Extract numbers from title if chapter_number is missing (for old chapters)
       const sortedChapters = [...m.chapters].sort((a, b) => {
           const numA = a.chapter_number || parseFloat(a.title.replace(/[^0-9.]/g, '')) || 0;
           const numB = b.chapter_number || parseFloat(b.title.replace(/[^0-9.]/g, '')) || 0;
@@ -1004,9 +1104,12 @@ input:checked + .slider:before { transform: translateX(20px); }
         const isCompleted = pStat.status === "completed";
         const isLastRead = (originalIdxInDb === lastReadIdx);
         
+        // ၃။ ဖတ်ပြီးသားဆိုရင် 'read' class ထည့်မယ်
+        const hasReadClass = mangaReadList.includes(originalIdxInDb) ? 'read' : '';
+        
         if (rIdx === 5) html += `<div id="moreChapters" class="hidden-chapters">`;
         html += `
-          <div class="chapter-item ${isCompleted ? 'fully-read' : ''}" onclick="openReadingLobby('${fbId}', ${originalIdxInDb})">
+          <div class="chapter-item ${isCompleted ? 'fully-read' : ''} ${hasReadClass}" onclick="openReadingLobby('${fbId}', ${originalIdxInDb})">
             <div style="display:flex; flex-direction:column; gap:4px;">
                 <span style="color:white;">${ch.title}</span>
                 <div class="view-count">👁️ ${ch.views || 0} Views | ${ch.pages.length} Pages</div>
@@ -1043,7 +1146,10 @@ input:checked + .slider:before { transform: translateX(20px); }
       isFirstLoadFromIntro = false;
       window.navigateTo('readingLobby');
       document.getElementById('readingTitle').innerText = ch.title;
+      
+      // ၃။ Chapter ကို ဝင်လိုက်တာနဲ့ Auto Count လုပ်မယ်
       markChapterReadAndCount(fbId, chIdx);
+      
       totalPages = ch.pages.length; 
       currentPageIndex = 0;
 

@@ -460,7 +460,6 @@ input:checked + .slider:before { transform: translateX(20px); }
           if (parent) parent.classList.add('skeleton-loader');
           imgElement.classList.add('fade-in-img');
           
-          // Create Retry Overlay
           const overlay = document.createElement('div');
           overlay.className = 'retry-overlay';
           overlay.innerHTML = `
@@ -491,7 +490,6 @@ input:checked + .slider:before { transform: translateX(20px); }
           };
 
           img.onerror = () => {
-              // ပုံမပေါ်ရင် Loading ဝဲနေတာရပ်ပြီး Retry Icon ပြမယ်
               if (parent) {
                   parent.classList.remove('skeleton-loader');
                   const ov = parent.querySelector('.retry-overlay');
@@ -500,7 +498,6 @@ input:checked + .slider:before { transform: translateX(20px); }
                       ov.onclick = () => {
                           ov.classList.remove('active');
                           parent.classList.add('skeleton-loader');
-                          // Cache မဖြစ်အောင် timestamp ထည့်ပြီး ပြန်ဆွဲမယ်
                           const retryUrl = imageUrl.includes('?') ? imageUrl + '&t=' + Date.now() : imageUrl + '?t=' + Date.now();
                           secureImageLoad(imgElement, retryUrl).then(resolve);
                       };
@@ -706,8 +703,6 @@ input:checked + .slider:before { transform: translateX(20px); }
 
         for (let i = 0; i < totalFiles; i += 2) {
             const batch = [];
-            
-            // ၁။ ပုံ ၂ ပုံကို Batch ထဲထည့်မယ်
             for (let j = 0; j < 2 && (i + j) < totalFiles; j++) {
                 const fileIndex = i + j;
                 batch.push(
@@ -716,16 +711,10 @@ input:checked + .slider:before { transform: translateX(20px); }
                     })
                 );
             }
-
-            // ၂။ ဒီ ၂ ပုံ ပြီးအောင်စောင့်မယ်
             await Promise.all(batch);
-
-            // ၃။ Progress update လုပ်မယ်
             let currentUploaded = Math.min(i + 2, totalFiles);
             progressBar.style.width = `${(currentUploaded / totalFiles) * 100}%`;
             showStatus(`Uploaded ${currentUploaded}/${totalFiles} 🚀`, "success");
-
-            // ၄။ ၂ ပုံ တင်ပြီးတိုင်း ၁ စက္ကန့် (1000ms) အတိအကျ စောင့်မယ်
             if (currentUploaded < totalFiles) {
                 await new Promise(resolve => setTimeout(resolve, 1000));
             }
@@ -733,7 +722,6 @@ input:checked + .slider:before { transform: translateX(20px); }
 
         const targetManga = window.mangas.find(m => m.fbId === selectedFbId);
         const now = Date.now();
-        // Extracting chapter number from title for sorting (e.g., "Chapter 12" -> 12)
         const chapterNum = parseFloat(cTitle.replace(/[^0-9.]/g, '')) || 0;
         const updatedChapters = [...(targetManga.chapters || []), { title: cTitle, pages: cloudUrls, views: 0, timestamp: now, chapter_number: chapterNum }];
         
@@ -924,10 +912,14 @@ input:checked + .slider:before { transform: translateX(20px); }
     }, 5000);
   }
 
-  function renderHistory(){
+  window.renderHistory = function(){
     document.getElementById('historyList').innerHTML = window.mangas.map(m => {
-      // Sorting chapters by number for history display
-      const sortedHistoryChapters = [...(m.chapters || [])].sort((a, b) => (a.chapter_number || 0) - (b.chapter_number || 0));
+      // Logic: chapter_number မရှိရင် Title ထဲက နံပါတ်ကို ဆွဲထုတ်ပြီး စီသည်
+      const sortedHistoryChapters = [...(m.chapters || [])].sort((a, b) => {
+          const numA = a.chapter_number || parseFloat(a.title.replace(/[^0-9.]/g, '')) || 0;
+          const numB = b.chapter_number || parseFloat(b.title.replace(/[^0-9.]/g, '')) || 0;
+          return numA - numB;
+      });
       return `
       <div class="historyItem">
         <div class="manga-header-info">
@@ -939,7 +931,7 @@ input:checked + .slider:before { transform: translateX(20px); }
           <div class="manga-del-btn" onclick="deleteManga('${m.fbId}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></div>
         </div>
         <div class="chapter-badge-container">
-          ${sortedHistoryChapters.map((ch, idx) => `<div class="chapter-chip"><span>${ch.title}</span><div class="del-btn" onclick="deleteChapter('${m.fbId}', ${idx})">✕</div></div>`).join('')}
+          ${sortedHistoryChapters.map((ch) => `<div class="chapter-chip"><span>${ch.title}</span><div class="del-btn" onclick="deleteChapter('${m.fbId}', ${m.chapters.indexOf(ch)})">✕</div></div>`).join('')}
         </div>
       </div>`}).join('');
   }
@@ -997,14 +989,16 @@ input:checked + .slider:before { transform: translateX(20px); }
     let html = '<div id="chapterContainer" style="display: flex; flex-direction: column;">';
     if(!m.chapters || m.chapters.length === 0) { html = "<p style='text-align:center; opacity:0.3; padding:50px;'>NO CHAPTERS YET</p>"; } 
     else {
-      // Sorting chapters by chapter_number first, then reverse for Latest at top
-      const sortedChapters = [...m.chapters].sort((a, b) => (a.chapter_number || 0) - (b.chapter_number || 0));
+      // Extract numbers from title if chapter_number is missing (for old chapters)
+      const sortedChapters = [...m.chapters].sort((a, b) => {
+          const numA = a.chapter_number || parseFloat(a.title.replace(/[^0-9.]/g, '')) || 0;
+          const numB = b.chapter_number || parseFloat(b.title.replace(/[^0-9.]/g, '')) || 0;
+          return numA - numB;
+      });
       const reversedChapters = [...sortedChapters].reverse();
       const lastReadIdx = parseInt(localStorage.getItem(`last_active_ch_${fbId}`));
       
       reversedChapters.forEach((ch, rIdx) => {
-        // Finding original index for reading lobby (based on original unsorted array if needed, 
-        // but it's safer to map to the actual index in the database)
         const originalIdxInDb = m.chapters.indexOf(ch);
         const pStat = JSON.parse(localStorage.getItem(`p_stat_${fbId}_${originalIdxInDb}`) || "{}");
         const isCompleted = pStat.status === "completed";
@@ -1053,15 +1047,18 @@ input:checked + .slider:before { transform: translateX(20px); }
       totalPages = ch.pages.length; 
       currentPageIndex = 0;
 
-      // Sidebar chapters sorted numerically
-      const sidebarSorted = [...m.chapters].sort((a, b) => (a.chapter_number || 0) - (b.chapter_number || 0));
+      const sidebarSorted = [...m.chapters].sort((a, b) => {
+          const numA = a.chapter_number || parseFloat(a.title.replace(/[^0-9.]/g, '')) || 0;
+          const numB = b.chapter_number || parseFloat(b.title.replace(/[^0-9.]/g, '')) || 0;
+          return numA - numB;
+      });
+
       document.getElementById('sidebarChapterList').innerHTML = sidebarSorted.map((c) => {
           const actualIdx = m.chapters.indexOf(c);
           return `<div class="sidebar-chapter-opt ${actualIdx === chIdx ? 'active' : ''}" onclick="openReadingLobby('${fbId}', ${actualIdx}); manualCloseSidebar();">${c.title}</div>`;
       }).join('');
 
       const nextBtn = document.getElementById('nextChapterBtn');
-      // Logic for Next Chapter based on sorted order
       const currentSortedIdx = sidebarSorted.indexOf(ch);
       if(currentSortedIdx + 1 < sidebarSorted.length) { 
           const nextChapter = sidebarSorted[currentSortedIdx + 1];

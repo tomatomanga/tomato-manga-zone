@@ -733,7 +733,9 @@ input:checked + .slider:before { transform: translateX(20px); }
 
         const targetManga = window.mangas.find(m => m.fbId === selectedFbId);
         const now = Date.now();
-        const updatedChapters = [...(targetManga.chapters || []), { title: cTitle, pages: cloudUrls, views: 0, timestamp: now }];
+        // Extracting chapter number from title for sorting (e.g., "Chapter 12" -> 12)
+        const chapterNum = parseFloat(cTitle.replace(/[^0-9.]/g, '')) || 0;
+        const updatedChapters = [...(targetManga.chapters || []), { title: cTitle, pages: cloudUrls, views: 0, timestamp: now, chapter_number: chapterNum }];
         
         await updateDoc(doc(db, "mangas", selectedFbId), { chapters: updatedChapters, lastUpdated: now });
         
@@ -923,7 +925,10 @@ input:checked + .slider:before { transform: translateX(20px); }
   }
 
   function renderHistory(){
-    document.getElementById('historyList').innerHTML = window.mangas.map(m => `
+    document.getElementById('historyList').innerHTML = window.mangas.map(m => {
+      // Sorting chapters by number for history display
+      const sortedHistoryChapters = [...(m.chapters || [])].sort((a, b) => (a.chapter_number || 0) - (b.chapter_number || 0));
+      return `
       <div class="historyItem">
         <div class="manga-header-info">
           <img src="${m.img}" loading="lazy">
@@ -934,9 +939,9 @@ input:checked + .slider:before { transform: translateX(20px); }
           <div class="manga-del-btn" onclick="deleteManga('${m.fbId}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></div>
         </div>
         <div class="chapter-badge-container">
-          ${(m.chapters || []).map((ch, idx) => `<div class="chapter-chip"><span>${ch.title}</span><div class="del-btn" onclick="deleteChapter('${m.fbId}', ${idx})">✕</div></div>`).join('')}
+          ${sortedHistoryChapters.map((ch, idx) => `<div class="chapter-chip"><span>${ch.title}</span><div class="del-btn" onclick="deleteChapter('${m.fbId}', ${idx})">✕</div></div>`).join('')}
         </div>
-      </div>`).join('');
+      </div>`}).join('');
   }
 
   async function markChapterReadAndCount(mangaId, chapterIdx) {
@@ -992,16 +997,22 @@ input:checked + .slider:before { transform: translateX(20px); }
     let html = '<div id="chapterContainer" style="display: flex; flex-direction: column;">';
     if(!m.chapters || m.chapters.length === 0) { html = "<p style='text-align:center; opacity:0.3; padding:50px;'>NO CHAPTERS YET</p>"; } 
     else {
-      const reversedChapters = [...m.chapters].reverse();
+      // Sorting chapters by chapter_number first, then reverse for Latest at top
+      const sortedChapters = [...m.chapters].sort((a, b) => (a.chapter_number || 0) - (b.chapter_number || 0));
+      const reversedChapters = [...sortedChapters].reverse();
       const lastReadIdx = parseInt(localStorage.getItem(`last_active_ch_${fbId}`));
+      
       reversedChapters.forEach((ch, rIdx) => {
-        const originalIdx = m.chapters.length - 1 - rIdx;
-        const pStat = JSON.parse(localStorage.getItem(`p_stat_${fbId}_${originalIdx}`) || "{}");
+        // Finding original index for reading lobby (based on original unsorted array if needed, 
+        // but it's safer to map to the actual index in the database)
+        const originalIdxInDb = m.chapters.indexOf(ch);
+        const pStat = JSON.parse(localStorage.getItem(`p_stat_${fbId}_${originalIdxInDb}`) || "{}");
         const isCompleted = pStat.status === "completed";
-        const isLastRead = (originalIdx === lastReadIdx);
+        const isLastRead = (originalIdxInDb === lastReadIdx);
+        
         if (rIdx === 5) html += `<div id="moreChapters" class="hidden-chapters">`;
         html += `
-          <div class="chapter-item ${isCompleted ? 'fully-read' : ''}" onclick="openReadingLobby('${fbId}', ${originalIdx})">
+          <div class="chapter-item ${isCompleted ? 'fully-read' : ''}" onclick="openReadingLobby('${fbId}', ${originalIdxInDb})">
             <div style="display:flex; flex-direction:column; gap:4px;">
                 <span style="color:white;">${ch.title}</span>
                 <div class="view-count">👁️ ${ch.views || 0} Views | ${ch.pages.length} Pages</div>
@@ -1041,14 +1052,24 @@ input:checked + .slider:before { transform: translateX(20px); }
       markChapterReadAndCount(fbId, chIdx);
       totalPages = ch.pages.length; 
       currentPageIndex = 0;
-      document.getElementById('sidebarChapterList').innerHTML = m.chapters.map((c, i) => 
-          `<div class="sidebar-chapter-opt ${i === chIdx ? 'active' : ''}" onclick="openReadingLobby('${fbId}', ${i}); manualCloseSidebar();">${c.title}</div>`
-      ).join('');
+
+      // Sidebar chapters sorted numerically
+      const sidebarSorted = [...m.chapters].sort((a, b) => (a.chapter_number || 0) - (b.chapter_number || 0));
+      document.getElementById('sidebarChapterList').innerHTML = sidebarSorted.map((c) => {
+          const actualIdx = m.chapters.indexOf(c);
+          return `<div class="sidebar-chapter-opt ${actualIdx === chIdx ? 'active' : ''}" onclick="openReadingLobby('${fbId}', ${actualIdx}); manualCloseSidebar();">${c.title}</div>`;
+      }).join('');
+
       const nextBtn = document.getElementById('nextChapterBtn');
-      if(chIdx + 1 < m.chapters.length) { 
+      // Logic for Next Chapter based on sorted order
+      const currentSortedIdx = sidebarSorted.indexOf(ch);
+      if(currentSortedIdx + 1 < sidebarSorted.length) { 
+          const nextChapter = sidebarSorted[currentSortedIdx + 1];
+          const nextActualIdx = m.chapters.indexOf(nextChapter);
           nextBtn.disabled = false; nextBtn.innerText = "Next"; 
-          nextBtn.onclick = () => { saveReadingProgress(); openReadingLobby(fbId, chIdx + 1); }; 
+          nextBtn.onclick = () => { saveReadingProgress(); openReadingLobby(fbId, nextActualIdx); }; 
       } else { nextBtn.disabled = true; nextBtn.innerText = "End"; }
+
       const hbToggle = document.getElementById('headbar-toggle');
       const savedStatus = localStorage.getItem('headBarStatus') !== 'off';
       hbToggle.checked = savedStatus; applyHeadBarSetting(savedStatus);

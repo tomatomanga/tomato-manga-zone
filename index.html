@@ -229,8 +229,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 .mgmt-chapter-list {
     max-height: 85px; /* အတန်း ၂ တန်းခန့်ပြမယ် */
     overflow: hidden;
-    display: flex;
-    flex-wrap: wrap;
+    display: flex; flex-wrap: wrap;
     gap: 8px;
     transition: max-height 0.3s ease;
 }
@@ -356,6 +355,13 @@ input:checked + .slider:before { transform: translateX(20px); }
   </div>
   
   <div id="adminForm" style="display:none">
+    <div class="admin-section-title">Cloudinary Server Settings</div>
+    <label class="input-label">Select Active Account</label>
+    <select id="cloudinaryAccountSelector" style="background:#1a1a1a; color:#fff; border:1px solid #ff2a2a; margin-bottom:15px; padding:10px; border-radius:8px; width: 100%;">
+        <option value="acc_1">Account 1</option>
+        <option value="acc_2">Account 2</option>
+    </select>
+
     <div class="admin-section-title">Step 1: New Manga</div>
     <label class="input-label">Manga Title</label>
     <input id="mangaTitle" placeholder="Enter title...">
@@ -371,13 +377,6 @@ input:checked + .slider:before { transform: translateX(20px); }
     <div style="height:1px; background:#222; margin: 30px 0;"></div>
     
     <div class="admin-section-title">Step 2: Add Content</div>
-    
-    <label class="input-label">Cloudinary Account (Server)</label>
-    <select id="cloudinaryAccountSelector" style="background:#1a1a1a; color:#fff; border:1px solid #ff2a2a; margin-bottom:15px; padding:10px; border-radius:8px;">
-        <option value="acc_1">Account A (Main - dxbelpram)</option>
-        <option value="acc_2">Account B (New - des4futwk)</option>
-    </select>
-
     <label class="input-label">Select Target Manga</label>
     <select id="mangaSelect"></select>
     <label class="input-label">Chapter Name</label>

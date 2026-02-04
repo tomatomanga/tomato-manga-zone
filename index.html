@@ -683,7 +683,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     btn.disabled = false;
   }
 
-  /* --- uploadChapter with Enhanced Notification & Progress Bar --- */
+  /* --- uploadChapter with 2 PICS / 1s LOGIC --- */
   window.uploadChapter = async function() {
     const selectedFbId = document.getElementById('mangaSelect').value;
     const cTitle = document.getElementById('chapterTitle').value;
@@ -698,45 +698,63 @@ input:checked + .slider:before { transform: translateX(20px); }
     progressWrapper.style.display = 'block';
     progressBar.style.width = '0%';
     
-    let cloudUrls = [];
+    let cloudUrls = new Array(files.length);
     const totalFiles = files.length;
     
     try {
-      showStatus(`Initializing Upload... ⚡`, "success");
-      
-      for (let i = 0; i < totalFiles; i++) {
-          const currentNumber = i + 1;
-          showStatus(`Uploading photo ${currentNumber}/${totalFiles} 🚀`, "success");
-          let progressPercent = (currentNumber / totalFiles) * 100;
-          progressBar.style.width = `${progressPercent}%`;
-          const result = await processAndUpload(files[i]);
-          cloudUrls.push(result);
-      }
+        showStatus(`Uploading (2 pics / 1s) ⚡`, "success");
 
-      const targetManga = window.mangas.find(m => m.fbId === selectedFbId);
-      const now = Date.now();
-      const updatedChapters = [...(targetManga.chapters || []), { title: cTitle, pages: cloudUrls, views: 0, timestamp: now }];
-      
-      await updateDoc(doc(db, "mangas", selectedFbId), { chapters: updatedChapters, lastUpdated: now });
-      
-      document.getElementById('chapterTitle').value = ""; 
-      document.getElementById('chapterFiles').value = ""; 
-      document.getElementById('fileStatus').innerText = "No files selected";
-      
-      progressBar.style.background = "#4CAF50"; 
-      showStatus(`Chapter Published Successfully! ✅`, "success");
-      
-      setTimeout(() => { 
-          progressWrapper.style.display = 'none'; 
-          progressBar.style.width = '0%';
-          progressBar.style.background = "#2196F3"; 
-      }, 3000);
+        for (let i = 0; i < totalFiles; i += 2) {
+            const batch = [];
+            
+            // ၁။ ပုံ ၂ ပုံကို Batch ထဲထည့်မယ်
+            for (let j = 0; j < 2 && (i + j) < totalFiles; j++) {
+                const fileIndex = i + j;
+                batch.push(
+                    processAndUpload(files[fileIndex]).then(url => {
+                        cloudUrls[fileIndex] = url;
+                    })
+                );
+            }
+
+            // ၂။ ဒီ ၂ ပုံ ပြီးအောင်စောင့်မယ်
+            await Promise.all(batch);
+
+            // ၃။ Progress update လုပ်မယ်
+            let currentUploaded = Math.min(i + 2, totalFiles);
+            progressBar.style.width = `${(currentUploaded / totalFiles) * 100}%`;
+            showStatus(`Uploaded ${currentUploaded}/${totalFiles} 🚀`, "success");
+
+            // ၄။ ၂ ပုံ တင်ပြီးတိုင်း ၁ စက္ကန့် (1000ms) အတိအကျ စောင့်မယ်
+            if (currentUploaded < totalFiles) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+
+        const targetManga = window.mangas.find(m => m.fbId === selectedFbId);
+        const now = Date.now();
+        const updatedChapters = [...(targetManga.chapters || []), { title: cTitle, pages: cloudUrls, views: 0, timestamp: now }];
+        
+        await updateDoc(doc(db, "mangas", selectedFbId), { chapters: updatedChapters, lastUpdated: now });
+        
+        document.getElementById('chapterTitle').value = ""; 
+        document.getElementById('chapterFiles').value = ""; 
+        document.getElementById('fileStatus').innerText = "No files selected";
+        
+        progressBar.style.background = "#4CAF50"; 
+        showStatus(`Done! ✅`, "success");
+        
+        setTimeout(() => { 
+            progressWrapper.style.display = 'none'; 
+            progressBar.style.width = '0%';
+            progressBar.style.background = "#2196F3"; 
+        }, 3000);
 
     } catch(e) { 
-      showStatus("Upload Failed!", "fail"); 
-      progressBar.style.background = "#f44336"; 
+        showStatus("Upload Failed!", "fail"); 
+        progressBar.style.background = "#f44336"; 
     } finally { 
-      btn.disabled = false; 
+        btn.disabled = false; 
     }
   }
 
@@ -799,7 +817,6 @@ input:checked + .slider:before { transform: translateX(20px); }
     setTimeout(() => {
         document.body.classList.toggle("light");
         const isLight = document.body.classList.contains("light");
-        sun.style.display = "block"; // Placeholder - keep logic same as user provided
         sun.style.display = isLight ? "block" : "none"; moon.style.display = isLight ? "none" : "block";
         iconWrapper.classList.remove('rotate-anim');
     }, 300);
@@ -1011,12 +1028,9 @@ input:checked + .slider:before { transform: translateX(20px); }
       if(!m || !m.chapters[chIdx]) return;
       const ch = m.chapters[chIdx];
 
-      // --- SCROLL FIX FOR READING LOBBY ---
       const lobbyContainer = document.getElementById('readingLobby');
-      lobbyContainer.style.display = 'block'; // Ensure it's displayed
-      // Reset scroll position to TOP instantly when opening a new chapter
+      lobbyContainer.style.display = 'block'; 
       lobbyContainer.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-      // ------------------------------------
 
       localStorage.setItem(`last_active_ch_${fbId}`, chIdx);
       localStorage.setItem('currentReadChapterIdx', chIdx);
@@ -1040,7 +1054,6 @@ input:checked + .slider:before { transform: translateX(20px); }
       hbToggle.checked = savedStatus; applyHeadBarSetting(savedStatus);
       applyReadMode(); 
       
-      // Secondary safety scroll to top
       renderPagesSequentially(ch.pages).then(() => { 
           document.getElementById('readingLobby').scrollTo({ top: 0, left: 0, behavior: 'instant' });
       });
@@ -1070,7 +1083,6 @@ input:checked + .slider:before { transform: translateX(20px); }
       pages.forEach((p) => {
           const wrapper = document.createElement('div');
           wrapper.className = currentReadMode === 'scroll' ? 'page-placeholder' : 'page-item';
-          // Wrap with retry container class
           wrapper.classList.add('image-retry-container');
           const img = document.createElement('img'); wrapper.appendChild(img); container.appendChild(wrapper);
           imgElements.push({ img, url: p, wrapper });
@@ -1181,4 +1193,3 @@ input:checked + .slider:before { transform: translateX(20px); }
 </script>
 </body>
 </html>
-

@@ -519,70 +519,66 @@ input:checked + .slider:before { transform: translateX(20px); }
           .catch((err) => console.log("SW Error:", err));
   }
 
-    /* --- 🛡️ ENGINE 5.0 IMAGE LOADER + DISCORD AUTO-FIXER --- */
-  async function secureImageLoad(imgElement, imageUrl) {
-      // Discord Link ဖြစ်ခဲ့ရင် Auto-Fix လုပ်တဲ့အပိုင်း (ဒီအပိုင်းက Link သေတာကို ပြင်ပေးမှာပါ)
-      const fixDiscordUrl = (url) => {
-          if (!url || !url.includes("discordapp.com")) return url;
-          const cleanUrl = url.split('?')[0]; // Expiration Token တွေကို ဖြုတ်တယ်
-          return `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&l=9&af&n=-1`; // Proxy နဲ့ ပြန်ချိတ်တယ်
-      };
+    /* --- 🛡️ ENGINE 5.0 AUTO-HEALING LOADER --- */
+async function secureImageLoad(imgElement, imageUrl, mangaId, chapterIdx, pageIdx) {
+    const fixDiscordUrl = (url) => {
+        if (!url || !url.includes("discordapp.com")) return url;
+        const cleanUrl = url.split('?')[0];
+        return `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&l=9&af&n=-1`;
+    };
 
-      const finalUrl = fixDiscordUrl(imageUrl);
+    const finalUrl = fixDiscordUrl(imageUrl);
 
-      return new Promise((resolve) => {
-          const parent = imgElement.parentElement;
-          if (parent) parent.classList.add('skeleton-loader');
-          imgElement.classList.add('fade-in-img');
-          
-          const overlay = document.createElement('div');
-          overlay.className = 'retry-overlay';
-          overlay.innerHTML = `
-            <div class="retry-icon-btn">
-                <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-            </div>
-            <span class="retry-text">Retry Image</span>
-          `;
-          
-          if(parent && !parent.querySelector('.retry-overlay')) {
-              parent.style.position = 'relative';
-              parent.appendChild(overlay);
-          }
+    return new Promise((resolve) => {
+        const parent = imgElement.parentElement;
+        if (parent) parent.classList.add('skeleton-loader');
+        
+        const img = new Image();
+        img.src = finalUrl;
+        
+        img.onload = () => {
+            imgElement.src = finalUrl;
+            imgElement.classList.add('loaded');
+            if (parent) parent.classList.remove('skeleton-loader');
+            resolve();
+        };
 
-          const img = new Image();
-          img.src = finalUrl;
-          
-          img.onload = () => {
-              imgElement.src = finalUrl;
-              imgElement.classList.add('loaded');
-              imgElement.setAttribute('draggable', 'false');
-              if (parent) {
-                  parent.classList.remove('skeleton-loader');
-                  const ov = parent.querySelector('.retry-overlay');
-                  if(ov) ov.classList.remove('active');
-              }
-              resolve();
-          };
+        img.onerror = async () => {
+            console.log("Link dead detected! Healing database...");
+            
+            // ၁။ Backup Server (Engine) ဆီက Link အသစ်ကို လှမ်းယူမယ်
+            // ရှင့်မှာ Backup Engine ရှိရင် ဒီနေရာမှာ Fetch လုပ်ရပါမယ်။ 
+            // လောလောဆယ် Discord Proxy နဲ့ပဲ ပြန် Refresh လုပ်တဲ့ logic ထည့်ပေးထားပါတယ်။
+            const healedUrl = fixDiscordUrl(imageUrl) + "&refresh=" + Date.now();
 
-          img.onerror = () => {
-              if (parent) {
-                  parent.classList.remove('skeleton-loader');
-                  const ov = parent.querySelector('.retry-overlay');
-                  if(ov) {
-                      ov.classList.add('active');
-                      ov.onclick = () => {
-                          ov.classList.remove('active');
-                          parent.classList.add('skeleton-loader');
-                          // Retry လုပ်တဲ့အခါမှာလည်း Auto-Fix ကို သုံးထားပါတယ်
-                          const retryUrl = finalUrl.includes('?') ? finalUrl + '&t=' + Date.now() : finalUrl + '?t=' + Date.now();
-                          secureImageLoad(imgElement, retryUrl).then(resolve);
-                      };
-                  }
-              }
-              resolve(); 
-          };
-      });
-  }
+            // ၂။ Firebase Database ထဲမှာ အလိုအလျောက် အစားထိုးမယ် (Auto-Overwrite)
+            try {
+                const { getFirestore, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                const db = getFirestore();
+                const targetManga = window.mangas.find(m => m.fbId === mangaId);
+                
+                if (targetManga && targetManga.chapters[chapterIdx]) {
+                    let updatedPages = [...targetManga.chapters[chapterIdx].pages];
+                    updatedPages[pageIdx] = healedUrl; // Link အသစ်နဲ့ အစားထိုး
+                    
+                    let updatedChapters = [...targetManga.chapters];
+                    updatedChapters[chapterIdx].pages = updatedPages;
+
+                    await updateDoc(doc(db, "mangas", mangaId), {
+                        chapters: updatedChapters
+                    });
+                    
+                    console.log("Database Healed! ✅");
+                    // Link အသစ်နဲ့ ပုံကို ပြန်တင်မယ်
+                    imgElement.src = healedUrl;
+                }
+            } catch (err) {
+                console.error("Healing failed:", err);
+            }
+            resolve();
+        };
+    });
+}
 
   // --- MULTI-ACCOUNT CLOUDINARY LOGIC ---
   const CLOUDINARY_CONFIGS = {
@@ -1278,24 +1274,28 @@ input:checked + .slider:before { transform: translateX(20px); }
       lastScrollTop = st <= 0 ? 0 : st;
   });
 
-  async function renderPagesSequentially(pages) {
-      const container = document.getElementById('pagesContainer'); container.innerHTML = ''; 
-      const imgElements = [];
-      pages.forEach((p) => {
+    async function renderPagesSequentially(pages) {
+      const container = document.getElementById('pagesContainer'); 
+      container.innerHTML = ''; 
+      
+      // ပုံတွေကို ပိုမြန်အောင် Load လုပ်ပေးမယ့် အပိုင်း
+      for (const url of pages) {
           const wrapper = document.createElement('div');
-          wrapper.className = currentReadMode === 'scroll' ? 'page-placeholder' : 'page-item';
-          wrapper.classList.add('image-retry-container');
-          const img = document.createElement('img'); wrapper.appendChild(img); container.appendChild(wrapper);
-          imgElements.push({ img, url: p, wrapper });
-      });
-      for (let i = 0; i < imgElements.length; i++) {
-          await secureImageLoad(imgElements[i].img, imgElements[i].url);
-          imgElements[i].wrapper.style.background = 'transparent';
-          imgElements[i].wrapper.classList.remove('page-placeholder');
-          if(i+1 < pages.length) new Image().src = pages[i+1];
-          if(i+2 < pages.length) new Image().src = pages[i+2];
+          wrapper.className = currentReadMode === 'scroll' ? 'image-retry-container' : 'page-item image-retry-container';
+          
+          const img = document.createElement('img');
+          // Discord link တွေပါ အကုန်ပွင့်အောင် Proxy သုံးထားပါတယ်
+          img.src = `https://wsrv.nl/?url=${encodeURIComponent(url)}&l=9&af&n=-1`;
+          img.style.display = 'block';
+          img.style.width = '100%';
+          
+          wrapper.appendChild(img);
+          container.appendChild(wrapper);
       }
+      
       if(currentReadMode === 'page') container.style.transform = `translateX(0)`;
+      // ပုံတွေအကုန် စီပြီးမှ အပေါ်ဆုံးကို ပြန်ပို့ပေးမယ်
+      document.getElementById('readingLobby').scrollTo(0, 0);
   }
 
   window.toggleReadingSidebar = (e) => {

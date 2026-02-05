@@ -359,7 +359,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 <label class="input-label">Select Active Server</label>
 <select id="serverEngineSelector" style="background:#151515; color:#fff; border:1px solid #ff2a2a; margin-bottom:15px; padding:10px; border-radius:8px; width: 100%;" onchange="toggleEngineFields()">
     <option value="cloudinary">Cloudinary Server (Stable)</option>
-    <option value="telegraph">Telegra.ph Server (Unlimited)</option>
+    <option value="telegraph">Discord WebHook (Unlimited)</option>
 </select>
 
 <div id="cloudinaryOptions">
@@ -519,8 +519,17 @@ input:checked + .slider:before { transform: translateX(20px); }
           .catch((err) => console.log("SW Error:", err));
   }
 
-  /* --- ENGINE 5.0 IMAGE LOADER WITH INDIVIDUAL RETRY --- */
+    /* --- 🛡️ ENGINE 5.0 IMAGE LOADER + DISCORD AUTO-FIXER --- */
   async function secureImageLoad(imgElement, imageUrl) {
+      // Discord Link ဖြစ်ခဲ့ရင် Auto-Fix လုပ်တဲ့အပိုင်း (ဒီအပိုင်းက Link သေတာကို ပြင်ပေးမှာပါ)
+      const fixDiscordUrl = (url) => {
+          if (!url || !url.includes("discordapp.com")) return url;
+          const cleanUrl = url.split('?')[0]; // Expiration Token တွေကို ဖြုတ်တယ်
+          return `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&l=9&af&n=-1`; // Proxy နဲ့ ပြန်ချိတ်တယ်
+      };
+
+      const finalUrl = fixDiscordUrl(imageUrl);
+
       return new Promise((resolve) => {
           const parent = imgElement.parentElement;
           if (parent) parent.classList.add('skeleton-loader');
@@ -541,10 +550,10 @@ input:checked + .slider:before { transform: translateX(20px); }
           }
 
           const img = new Image();
-          img.src = imageUrl;
+          img.src = finalUrl;
           
           img.onload = () => {
-              imgElement.src = imageUrl;
+              imgElement.src = finalUrl;
               imgElement.classList.add('loaded');
               imgElement.setAttribute('draggable', 'false');
               if (parent) {
@@ -564,7 +573,8 @@ input:checked + .slider:before { transform: translateX(20px); }
                       ov.onclick = () => {
                           ov.classList.remove('active');
                           parent.classList.add('skeleton-loader');
-                          const retryUrl = imageUrl.includes('?') ? imageUrl + '&t=' + Date.now() : imageUrl + '?t=' + Date.now();
+                          // Retry လုပ်တဲ့အခါမှာလည်း Auto-Fix ကို သုံးထားပါတယ်
+                          const retryUrl = finalUrl.includes('?') ? finalUrl + '&t=' + Date.now() : finalUrl + '?t=' + Date.now();
                           secureImageLoad(imgElement, retryUrl).then(resolve);
                       };
                   }
@@ -676,42 +686,55 @@ input:checked + .slider:before { transform: translateX(20px); }
       });
   }
 
-  // --- ၂။ UPDATED PROCESS AND UPLOAD (Telegraph + Cloudinary Support) ---
-  // ဒီ function က Admin ရွေးထားတဲ့ Server ပေါ်မူတည်ပြီး အလိုအလျောက် ပို့ပေးပါလိမ့်မယ်
+      // --- ၂။ UPDATED PROCESS AND UPLOAD (Discord Webhook + Cloudinary Support) ---
   async function processAndUpload(file) {
       const engine = document.getElementById('serverEngineSelector').value;
       await checkFileIntegrity(file); 
       const optimizedFile = await compressImage(file);
       
       if (engine === 'telegraph') {
-          // Telegra.ph Server သို့ တင်ခြင်း
+          // --- 🔥 DISCORD WEBHOOK ENGINE ---
+          const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1468816071464063078/G_0LvO_fg4i8saboQ4VaPMz9ZdOoRVo4372X27CZOl-ERguvyLhgUjy0FDRVXNaN4DxJ";
+          
           const formData = new FormData();
-          formData.append('file', optimizedFile);
+          formData.append('file', optimizedFile, optimizedFile.name);
+
           try {
-              const response = await fetch('https://graph.org/upload', {
-    method: 'POST',
-    body: formData
-});
-const data = await response.json();
-return "https://images1-focus-opensocial.googleusercontent.com/gadgets/proxy?container=focus&refresh=2592000&url=" + encodeURIComponent("https://graph.org" + data[0].src);
+              const response = await fetch(DISCORD_WEBHOOK, {
+                  method: 'POST',
+                  body: formData
+              });
+              
+              if (response.ok) {
+                  const data = await response.json();
+                  const discordUrl = data.attachments[0].url;
+                  
+                  // 🔥 Discord Link ကို Proxy Link အဖြစ် အလိုအလျောက် ပြောင်းလဲခြင်း
+                  // ဒါက User တွေ VPN မလိုဘဲ ပုံကြည်ကြည်လင်လင် မြန်မြန်ကြည့်နိုင်ဖို့ပါ
+                  return `https://wsrv.nl/?url=${encodeURIComponent(discordUrl)}`; 
+              } else {
+                  showStatus("Discord Error: Upload မအောင်မြင်ပါ Admin!", "fail");
+                  return null;
+              }
           } catch (err) {
-              console.error("Telegraph Error:", err);
+              showStatus("Network Error: အင်တာနက် လိုင်းစစ်ပေးပါဦး Admin!", "fail");
               return null;
           }
       } else {
-          // Cloudinary Server သို့ တင်ခြင်း (မူလအတိုင်း)
+          // --- ☁️ CLOUDINARY ENGINE (မူလအတိုင်း) ---
           const selectedAccKey = document.getElementById('cloudinaryAccountSelector').value;
           const config = CLOUDINARY_CONFIGS[selectedAccKey];
-
           const formData = new FormData();
           formData.append("file", optimizedFile); 
           formData.append("upload_preset", config.preset);
-
           try {
               const res = await fetch(config.url, { method: "POST", body: formData });
               const data = await res.json(); 
               return data.secure_url;
-          } catch (e) { throw e; }
+          } catch (e) { 
+              showStatus("Cloudinary Error!", "fail");
+              throw e; 
+          }
       }
   }
 
